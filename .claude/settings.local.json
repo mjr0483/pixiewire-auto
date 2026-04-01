@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "mcp__0f16a09c-adbb-4149-a7f2-8ead0b53c9bb__*",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(ssh root@178.156.252.28 \"docker exec pw-dashboard sed -i ''/<div class=\"\"section-label\"\">Server Tools/i<div class=\"\"section-label\"\">Automation</div>\\\\n<div class=\"\"grid\"\">\\\\n  <a class=\"\"card\"\" href=\"\"https://auto.pixiewire.com/x-poster\"\" target=\"\"_blank\"\">\\\\n    <div class=\"\"card-icon bg-gray\"\">\\\\&#120143;</div>\\\\n    <div class=\"\"card-body\"\">\\\\n      <div class=\"\"card-name\"\">X Auto-Poster</div>\\\\n      <div class=\"\"card-desc\"\">Automated tweet scheduling \\\\&amp; generation</div>\\\\n    </div>\\\\n    <div class=\"\"card-arrow\"\">\\\\&rsaquo;</div>\\\\n  </a>\\\\n</div>\\\\n'' /usr/share/nginx/html/index.html\")",
+      "Bash(ssh root@178.156.252.28 \"docker inspect pw-dashboard --format ''{{json .Mounts}}'' | python3 -m json.tool 2>/dev/null || docker inspect pw-dashboard --format ''{{json .Mounts}}''\")",
+      "Bash(ssh root@178.156.252.28 \"grep -A5 ''Automation'' /opt/pw-dashboard/index.html\")"
+    ]
+  }
+}
