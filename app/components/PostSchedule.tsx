@@ -38,7 +38,7 @@ function adjustTime(time: string, delta: number): string {
 }
 
 export default function PostSchedule({ schedule, onSave }: Props) {
-  const [slots, setSlots] = useState<PostSlot[]>(schedule.schedule);
+  const [slots, setSlots] = useState<PostSlot[]>(schedule?.schedule || []);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 

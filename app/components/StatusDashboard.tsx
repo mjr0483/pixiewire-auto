@@ -41,11 +41,12 @@ function formatTimeET(iso: string): string {
 }
 
 export default function StatusDashboard({ settings, queue, onToggle }: Props) {
+  const schedule = settings.active_posting_windows?.schedule || [];
   const posted = queue.filter((q) => q.status === "posted").length;
-  const total = settings.active_posting_windows.posts_per_day;
+  const total = settings.active_posting_windows?.posts_per_day || 0;
 
   const now = new Date();
-  const nextSlot = settings.active_posting_windows.schedule
+  const nextSlot = schedule
     .filter((s) => {
       const [h, m] = s.time.split(":").map(Number);
       const slotDate = new Date(now.toLocaleDateString("en-US", { timeZone: "America/New_York" }));
