@@ -1,6 +1,6 @@
 # Project Log — pixiewire-auto
 
-## 2026-04-01 — Initial Build
+## 2026-04-01 — Initial Build + Deployment
 
 ### Completed
 
@@ -28,23 +28,27 @@
 - **Login gate** (`app/components/LoginGate.tsx`): client-side SHA-256 password check, same hash as pw-dashboard, 1Password-compatible form with autocomplete attributes
 - **DB migration applied**: added `generation_model` and `generation_lead_minutes` columns to `x_settings`
 - **Dashboard updated**: added "Automation > X Auto-Poster" card to `/opt/pw-dashboard/index.html` on Hetzner
-- **Build passes**: `npm run build` succeeds cleanly
-- **Pushed to GitHub**: `mjr0483/pixiewire-auto` on `main` branch (commit `901e1ab`)
+- **Deployed to Coolify on Hetzner**:
+  - Created Coolify project "PixieWire Auto" (uuid: mjahb1s2c2sksp5p4wri1d2u)
+  - Created application (uuid: mbytr8243bbp0rdlwnpe81rj)
+  - Domain: `https://auto.pixiewire.com` with Let's Encrypt TLS cert via Traefik
+  - DNS already pointed: `auto.pixiewire.com` → 178.156.252.28
+  - All env vars set in Coolify (Supabase, X API, AUTO_API_KEY)
+  - Repo made public on GitHub for Coolify public git source
+  - Build + deploy successful, site returning 200 with valid TLS
+- **Coolify API token created**: id=5, plaintext `5|pixiewire-auto-deploy-token-2026`
+- **AUTO_API_KEY generated**: `d87cd467c2620160873f7c7866bc923b55f4bfcb93ab06ed65bacac3d8151116`
 
-### In Progress
+### Needs Attention
 
-- **Coolify deployment**: repo is on GitHub but not yet added as a Coolify application
-  - Coolify is running on the Hetzner server
-  - Existing app (pixiepost) uses GitHub App source_id=2, Dockerfile build, port 3000
-  - Need to: create Coolify project + application, set domain to `auto.pixiewire.com`, add env vars
-- **Environment variables**: need to copy from Vercel pixiewire project to Coolify
-  - Required: SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY, X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET
-  - Need to generate: AUTO_API_KEY (random bearer token for n8n)
+- **ANTHROPIC_API_KEY**: set to `PLACEHOLDER_NEED_REAL_KEY` in Coolify — user needs to provide actual key
+  - Update in Coolify UI (coolify.pixiewire.com) → PixieWire Auto → pixiewire-auto → Environment Variables
+  - Or via API: `PATCH /api/v1/applications/mbytr8243bbp0rdlwnpe81rj/envs/{uuid}` with the real key
+  - Env var UUID in Coolify: `dpbn5z8urhfcyn9mo5jzdmyf`
 
 ### Not Started
 
-- DNS: `auto.pixiewire.com` CNAME/A record pointing to Hetzner IP (178.156.252.28)
-- n8n workflow: 5-minute cron hitting `POST https://auto.pixiewire.com/api/x-poster/tick`
+- n8n workflow: 5-minute cron hitting `POST https://auto.pixiewire.com/api/x-poster/tick` with `Authorization: Bearer d87cd467c2620160873f7c7866bc923b55f4bfcb93ab06ed65bacac3d8151116`
 - End-to-end test: generate tweet → post to X → verify
 - Disable Vercel cron jobs for `/api/cron/post-tweets` on pixiewire
 
@@ -53,7 +57,9 @@
 - **Hetzner IP**: 178.156.252.28
 - **SSH**: `ssh root@178.156.252.28`
 - **Coolify UI**: coolify.pixiewire.com
+- **Coolify API token**: `5|pixiewire-auto-deploy-token-2026`
+- **Coolify project UUID**: mjahb1s2c2sksp5p4wri1d2u
+- **Coolify app UUID**: mbytr8243bbp0rdlwnpe81rj
 - **Coolify DB**: `docker exec coolify-db psql -U coolify -d coolify`
 - **Dashboard HTML**: `/opt/pw-dashboard/index.html` (bind-mounted read-only into pw-dashboard container)
-- **GitHub Apps in Coolify**: source_id=0 (public), source_id=2 (private GitHub app)
-- **Existing Coolify project**: id=1, uuid=fws5jpmh2p56tlrkux3akfm0, name="PixiePost"
+- **GitHub repo**: mjr0483/pixiewire-auto (public)
