@@ -1,10 +1,21 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { DEFAULT_CONTENT_TYPES } from "@/lib/content-types";
 import PromptEditor from "./PromptEditor";
 import PostSchedule from "./PostSchedule";
 import StatusDashboard from "./StatusDashboard";
 import TweetQueue from "./TweetQueue";
+import ContentTypeSchema from "./ContentTypeSchema";
+
+interface ContentType {
+  id: string;
+  label: string;
+  maxChars: number;
+  description: string;
+  urlStrategy: string;
+  bestTimeSlots: string[];
+}
 
 interface PostSlot {
   slot: number;
@@ -21,6 +32,9 @@ interface Settings {
   };
   generation_model: string;
   generation_lead_minutes: number;
+  content_types: ContentType[] | null;
+  last_tick_at: string | null;
+  last_tick_result: { actions: string[] } | null;
 }
 
 interface QueueItem {
@@ -58,6 +72,12 @@ export default function XPosterPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
+
   const saveSettings = async (updates: Partial<Settings>) => {
     const res = await fetch("/api/x-poster/settings", {
       method: "PUT",
@@ -91,6 +111,10 @@ export default function XPosterPage() {
     </>
   );
 
+  const contentTypes = settings?.content_types && settings.content_types.length > 0
+    ? settings.content_types
+    : DEFAULT_CONTENT_TYPES;
+
   return (
     <>
       <div className="header">
@@ -112,12 +136,18 @@ export default function XPosterPage() {
               queue={queue}
               onToggle={(enabled) => saveSettings({ posting_enabled: enabled })}
             />
+            <ContentTypeSchema
+              contentTypes={contentTypes}
+              defaults={DEFAULT_CONTENT_TYPES}
+              onSave={(types) => saveSettings({ content_types: types })}
+            />
             <PromptEditor
               prompt={settings.grok_prompt || ""}
               onSave={(prompt) => saveSettings({ grok_prompt: prompt })}
             />
             <PostSchedule
               schedule={settings.active_posting_windows}
+              contentTypes={contentTypes}
               onSave={(schedule) => saveSettings({ active_posting_windows: schedule })}
             />
             <TweetQueue queue={queue} onAction={queueAction} />

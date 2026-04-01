@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
-import { getSettings, getTodayQueue, insertTweet, updateTweet } from "@/lib/supabase";
+import { getSettings, getTodayQueue, insertTweet, updateTweet, updateSettings } from "@/lib/supabase";
 import { getTodayET, getTodayStartET, getCurrentTimeET, getScheduledTimestampUTC } from "@/lib/eastern-time";
 import { generateTweet } from "@/lib/claude";
-import { getContentType, buildPrompt } from "@/lib/content-types";
+import { resolveContentTypes, buildPrompt } from "@/lib/content-types";
 import { postTweet, getXCredentials } from "@/lib/x-api";
 
 export async function POST(req: NextRequest) {
@@ -16,14 +16,17 @@ export async function POST(req: NextRequest) {
     const settings = await getSettings();
 
     if (!settings.posting_enabled) {
+      await updateSettings({ last_tick_at: new Date().toISOString(), last_tick_result: { actions: ["Posting disabled"] } } as any);
       return NextResponse.json({ ok: true, actions: ["Posting disabled"] });
     }
 
     const schedule = settings.active_posting_windows;
     if (!schedule?.schedule?.length) {
+      await updateSettings({ last_tick_at: new Date().toISOString(), last_tick_result: { actions: ["No schedule configured"] } } as any);
       return NextResponse.json({ ok: true, actions: ["No schedule configured"] });
     }
 
+    const contentTypes = resolveContentTypes(settings.content_types);
     const todayStart = getTodayStartET();
     const todayET = getTodayET();
     const currentTime = getCurrentTimeET();
@@ -40,9 +43,8 @@ export async function POST(req: NextRequest) {
 
       const existingTweet = queue.find((q) => q.batch === String(slot.slot));
 
-      // Generate tweet if within lead time and no tweet exists yet
       if (minutesUntilSlot <= leadMinutes && minutesUntilSlot > -5 && !existingTweet) {
-        const ct = getContentType(slot.content_type);
+        const ct = contentTypes.find((t) => t.id === slot.content_type);
         if (!ct) {
           actions.push(`Slot ${slot.slot}: unknown content type ${slot.content_type}`);
           continue;
@@ -69,7 +71,6 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Post tweet if scheduled time has passed and status is "scheduled"
       if (existingTweet && existingTweet.status === "scheduled" && existingTweet.scheduled_at) {
         const scheduledTime = new Date(existingTweet.scheduled_at);
         if (scheduledTime <= new Date()) {
@@ -96,6 +97,9 @@ export async function POST(req: NextRequest) {
     if (actions.length === 0) {
       actions.push("No actions needed this tick");
     }
+
+    // Record tick result for dashboard visibility
+    await updateSettings({ last_tick_at: new Date().toISOString(), last_tick_result: { actions } } as any);
 
     return NextResponse.json({ ok: true, actions });
   } catch (e) {

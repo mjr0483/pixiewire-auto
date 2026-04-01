@@ -3,27 +3,29 @@ export interface ContentType {
   label: string;
   maxChars: number;
   description: string;
+  urlStrategy: string;
+  bestTimeSlots: string[];
 }
 
-export const CONTENT_TYPES: ContentType[] = [
-  { id: "news", label: "Latest News", maxChars: 240, description: "News tweet linking to pixiewire.com/daily or original source" },
-  { id: "curator", label: "Curated Story", maxChars: 240, description: "Curated story with commentary, links to pixiewire.com/daily" },
-  { id: "opinionator", label: "Opinion", maxChars: 400, description: "Confident editorial stance, no URL" },
-  { id: "tracker", label: "Tracker Promo", maxChars: 200, description: "Promote a PixieWire planning tool" },
-  { id: "article_tease", label: "Article Tease", maxChars: 180, description: "Short punchy hook for a major story" },
-  { id: "joke-of-the-day", label: "Joke of the Day", maxChars: 280, description: "Pull from existing jokes system" },
+export const DEFAULT_CONTENT_TYPES: ContentType[] = [
+  { id: "news", label: "Breaking News", maxChars: 240, description: "Breaking or top story, linked to original source", urlStrategy: "Source URL", bestTimeSlots: ["Morning", "Midday"] },
+  { id: "news_pixiewire", label: "PixieWire Daily", maxChars: 240, description: "Same story routed through pixiewire.com/daily", urlStrategy: "pixiewire.com/daily", bestTimeSlots: ["Morning", "Evening"] },
+  { id: "curator", label: "Curated Roundup", maxChars: 240, description: "\"Here's what everyone's talking about\" — multiple stories", urlStrategy: "pixiewire.com/daily", bestTimeSlots: ["Midday"] },
+  { id: "opinionator", label: "Hot Take", maxChars: 400, description: "Confident editorial stance on a Disney topic, no URL", urlStrategy: "None", bestTimeSlots: ["Afternoon", "Evening"] },
+  { id: "tracker", label: "Tracker Promo", maxChars: 200, description: "Promotes a PixieWire planning tool contextually", urlStrategy: "Tool URL", bestTimeSlots: ["Morning", "Weekend"] },
+  { id: "trending", label: "Trending React", maxChars: 280, description: "Reacts to what's trending on X/Disney Twitter right now", urlStrategy: "Optional source", bestTimeSlots: ["Midday", "Evening"] },
+  { id: "article_tease", label: "Article Tease", maxChars: 180, description: "Teases a deeper PixieWire article (sparingly)", urlStrategy: "pixiewire.com article", bestTimeSlots: ["As needed"] },
 ];
 
-export function getContentType(id: string): ContentType | undefined {
-  return CONTENT_TYPES.find((ct) => ct.id === id);
+export function resolveContentTypes(dbTypes: ContentType[] | null): ContentType[] {
+  return dbTypes && dbTypes.length > 0 ? dbTypes : DEFAULT_CONTENT_TYPES;
+}
+
+export function getContentType(id: string, types?: ContentType[]): ContentType | undefined {
+  const list = types || DEFAULT_CONTENT_TYPES;
+  return list.find((ct) => ct.id === id);
 }
 
 export function buildPrompt(masterPrompt: string, contentType: ContentType, currentTime: string): string {
-  return `${masterPrompt}
-
-CONTENT TYPE FOR THIS TWEET: ${contentType.id} — ${contentType.description}
-MAX CHARACTERS: ${contentType.maxChars}
-CURRENT TIME: ${currentTime} ET
-
-Write one tweet. Max ${contentType.maxChars} characters. Return ONLY the tweet text, nothing else.`;
+  return masterPrompt.replace(/\{\{CONTENT_TYPE\}\}/g, contentType.id);
 }

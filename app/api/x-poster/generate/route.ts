@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { getSettings } from "@/lib/supabase";
 import { generateTweet } from "@/lib/claude";
-import { getContentType, buildPrompt } from "@/lib/content-types";
+import { resolveContentTypes, buildPrompt } from "@/lib/content-types";
 import { getCurrentTimeET } from "@/lib/eastern-time";
 
 export async function POST(req: NextRequest) {
@@ -12,7 +12,8 @@ export async function POST(req: NextRequest) {
   try {
     const { content_type } = await req.json();
     const settings = await getSettings();
-    const ct = getContentType(content_type);
+    const contentTypes = resolveContentTypes(settings.content_types);
+    const ct = contentTypes.find((t) => t.id === content_type);
     if (!ct) {
       return NextResponse.json({ error: `Unknown content type: ${content_type}` }, { status: 400 });
     }

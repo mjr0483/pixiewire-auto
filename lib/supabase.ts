@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import type { ContentType } from "./content-types";
 
 let _supabase: SupabaseClient | null = null;
 
@@ -30,6 +31,9 @@ export interface XSettings {
   grok_prompt: string | null;
   generation_model: string;
   generation_lead_minutes: number;
+  content_types: ContentType[] | null;
+  last_tick_at: string | null;
+  last_tick_result: { actions: string[] } | null;
   api_key: string | null;
   api_secret: string | null;
   access_token: string | null;

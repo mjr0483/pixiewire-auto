@@ -2,15 +2,6 @@
 
 import { useState } from "react";
 
-const CONTENT_TYPES = [
-  { id: "news", label: "Latest News" },
-  { id: "curator", label: "Curated Story" },
-  { id: "opinionator", label: "Opinion" },
-  { id: "tracker", label: "Tracker Promo" },
-  { id: "article_tease", label: "Article Tease" },
-  { id: "joke-of-the-day", label: "Joke of the Day" },
-];
-
 interface PostSlot {
   slot: number;
   time: string;
@@ -24,6 +15,7 @@ interface Schedule {
 
 interface Props {
   schedule: Schedule;
+  contentTypes: { id: string; label: string }[];
   onSave: (schedule: Schedule) => void;
 }
 
@@ -37,7 +29,7 @@ function adjustTime(time: string, delta: number): string {
   return `${String(newH).padStart(2, "0")}:${String(newM).padStart(2, "0")}`;
 }
 
-export default function PostSchedule({ schedule, onSave }: Props) {
+export default function PostSchedule({ schedule, contentTypes, onSave }: Props) {
   const [slots, setSlots] = useState<PostSlot[]>(schedule?.schedule || []);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -51,7 +43,7 @@ export default function PostSchedule({ schedule, onSave }: Props) {
   const addSlot = () => {
     const lastTime = slots.length > 0 ? slots[slots.length - 1].time : "08:00";
     const newTime = adjustTime(lastTime, 120);
-    setSlots([...slots, { slot: slots.length + 1, time: newTime, content_type: "news" }]);
+    setSlots([...slots, { slot: slots.length + 1, time: newTime, content_type: contentTypes[0]?.id || "news" }]);
   };
 
   const removeSlot = (index: number) => {
@@ -87,7 +79,7 @@ export default function PostSchedule({ schedule, onSave }: Props) {
             value={slot.content_type}
             onChange={(e) => updateSlot(i, "content_type", e.target.value)}
           >
-            {CONTENT_TYPES.map((ct) => (
+            {contentTypes.map((ct) => (
               <option key={ct.id} value={ct.id}>{ct.label}</option>
             ))}
           </select>
