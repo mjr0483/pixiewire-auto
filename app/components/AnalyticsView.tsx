@@ -171,14 +171,21 @@ export default function AnalyticsView() {
               )}
             </div>
 
-            {/* X API engagement note */}
+            {/* X engagement via Postiz */}
             <div className="xp-section">
               <h2>X Engagement Stats</h2>
-              <div style={{ color: "var(--muted)", fontSize: 13, lineHeight: 1.6 }}>
-                X API engagement metrics (likes, retweets, impressions) require the Basic tier API ($100/mo).
-                The current free tier supports posting and user lookup only.
-                To enable engagement tracking, upgrade at <a href="https://developer.x.com" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>developer.x.com</a>.
+              <div style={{ fontSize: 13, lineHeight: 1.6 }}>
+                Engagement metrics (impressions, likes, retweets) are available through Postiz, which has OAuth access to your X account analytics.
               </div>
+              <a
+                href="https://pixiepost.pixiewire.com/analytics"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="xp-btn xp-btn-primary"
+                style={{ display: "inline-block", marginTop: 10, textDecoration: "none" }}
+              >
+                View in Postiz
+              </a>
             </div>
           </>
         )}
