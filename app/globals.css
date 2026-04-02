@@ -172,6 +172,8 @@ body {
 .xp-queue-status.posted { background: var(--success-soft); color: var(--success); }
 .xp-queue-status.failed { background: var(--accent-soft); color: var(--accent); }
 .xp-queue-status.skipped { background: var(--rule-light); color: var(--muted); }
+.xp-queue-status.deleted { background: var(--rule-light); color: var(--muted); text-decoration: line-through; }
+.xp-queue-status.monitor { background: var(--gold-soft); color: var(--gold); }
 .xp-queue-detail { padding: 8px 0 4px 60px; font-size: 13px; color: var(--ink); line-height: 1.4; }
 .xp-queue-actions { display: flex; gap: 8px; padding: 6px 0 0 60px; }
 

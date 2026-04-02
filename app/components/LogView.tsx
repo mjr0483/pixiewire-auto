@@ -155,6 +155,7 @@ export default function LogView() {
                     <th style={{ padding: "8px 4px", textAlign: "left" }}>Content</th>
                     <th style={{ padding: "8px 4px", textAlign: "left" }}>Status</th>
                     <th style={{ padding: "8px 4px", textAlign: "left" }}>Links</th>
+                    <th style={{ padding: "8px 4px", textAlign: "left" }}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -183,6 +184,25 @@ export default function LogView() {
                           <a href={t.source_url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--muted)", fontSize: 11 }}>source</a>
                         )}
                         {!t.tweet_id && !t.source_url && "—"}
+                      </td>
+                      <td style={{ padding: "8px 4px" }}>
+                        {t.status === "posted" && (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              await fetch("/api/x-poster/queue", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ id: t.id, action: "delete" }),
+                              });
+                              // Refresh
+                              fetch("/api/x-poster/log?limit=500").then(r => r.json()).then(data => { setAllTweets(data.tweets || []); });
+                            }}
+                            style={{ fontSize: 10, color: "var(--muted)", background: "none", border: "1px solid var(--rule-light)", borderRadius: 4, padding: "2px 8px", cursor: "pointer" }}
+                          >
+                            Mark Deleted
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
