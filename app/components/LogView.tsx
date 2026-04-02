@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import NavPills from "./NavPills";
 
 interface Tweet {
   id: string;
@@ -20,58 +21,96 @@ interface Tweet {
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
-    timeZone: "America/New_York",
-    month: "short",
-    day: "numeric",
+    timeZone: "America/New_York", month: "short", day: "numeric",
   });
 }
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-US", {
-    timeZone: "America/New_York",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
+    timeZone: "America/New_York", hour: "numeric", minute: "2-digit", hour12: true,
   });
 }
 
 export default function LogView() {
-  const [tweets, setTweets] = useState<Tweet[]>([]);
-  const [total, setTotal] = useState(0);
+  const [allTweets, setAllTweets] = useState<Tweet[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filters
+  const [filterType, setFilterType] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterSearch, setFilterSearch] = useState("");
+
   const [page, setPage] = useState(0);
-  const limit = 25;
+  const perPage = 25;
 
   useEffect(() => {
-    setLoading(true);
-    fetch(`/api/x-poster/log?limit=${limit}&offset=${page * limit}`)
+    fetch("/api/x-poster/log?limit=500")
       .then((r) => r.json())
       .then((data) => {
-        setTweets(data.tweets || []);
-        setTotal(data.total || 0);
+        setAllTweets(data.tweets || []);
         setLoading(false);
       });
-  }, [page]);
+  }, []);
+
+  // Derive unique values for filter dropdowns
+  const types = useMemo(() => [...new Set(allTweets.map((t) => t.type))].sort(), [allTweets]);
+  const statuses = useMemo(() => [...new Set(allTweets.map((t) => t.status))].sort(), [allTweets]);
+
+  // Apply filters
+  const filtered = useMemo(() => {
+    return allTweets.filter((t) => {
+      if (filterType !== "all" && t.type !== filterType) return false;
+      if (filterStatus !== "all" && t.status !== filterStatus) return false;
+      if (filterSearch && !t.text?.toLowerCase().includes(filterSearch.toLowerCase()) && !t.topic?.toLowerCase().includes(filterSearch.toLowerCase())) return false;
+      return true;
+    });
+  }, [allTweets, filterType, filterStatus, filterSearch]);
+
+  const paginated = filtered.slice(page * perPage, (page + 1) * perPage);
+  const totalPages = Math.ceil(filtered.length / perPage);
+
+  // Reset page when filters change
+  useEffect(() => { setPage(0); }, [filterType, filterStatus, filterSearch]);
 
   return (
     <>
       <div className="header">
         <h1>Tweet Log</h1>
         <div className="brand">PixieWire</div>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 8 }}>
-          <a href="/" className="xp-nav-link">Auto-Poster</a>
-          <a href="/analytics" className="xp-nav-link">Analytics</a>
-        </div>
+        <NavPills />
       </div>
 
       <div className="xp-container">
+        {/* Filters */}
         <div className="xp-section">
-          <h2>{total} Total Tweets</h2>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <select className="xp-select" value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{ width: 140 }}>
+              <option value="all">All Types</option>
+              {types.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <select className="xp-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ width: 140 }}>
+              <option value="all">All Statuses</option>
+              {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <input
+              type="text"
+              className="xp-schema-input"
+              placeholder="Search content..."
+              value={filterSearch}
+              onChange={(e) => setFilterSearch(e.target.value)}
+              style={{ flex: 1, minWidth: 150, padding: "6px 10px", fontSize: 13 }}
+            />
+            <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--muted)" }}>
+              {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+        </div>
 
+        <div className="xp-section">
           {loading ? (
             <div style={{ textAlign: "center", color: "var(--muted)", padding: 20 }}>Loading...</div>
-          ) : tweets.length === 0 ? (
-            <div style={{ textAlign: "center", color: "var(--muted)", padding: 20 }}>No tweets logged yet.</div>
+          ) : paginated.length === 0 ? (
+            <div style={{ textAlign: "center", color: "var(--muted)", padding: 20 }}>No tweets match your filters.</div>
           ) : (
             <>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
@@ -82,11 +121,11 @@ export default function LogView() {
                     <th style={{ padding: "8px 4px", textAlign: "left" }}>Type</th>
                     <th style={{ padding: "8px 4px", textAlign: "left" }}>Content</th>
                     <th style={{ padding: "8px 4px", textAlign: "left" }}>Status</th>
-                    <th style={{ padding: "8px 4px", textAlign: "left" }}>Link</th>
+                    <th style={{ padding: "8px 4px", textAlign: "left" }}>Links</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {tweets.map((t) => (
+                  {paginated.map((t) => (
                     <tr key={t.id} style={{ borderBottom: "1px solid var(--rule-light)" }}>
                       <td style={{ padding: "8px 4px", whiteSpace: "nowrap", fontFamily: "var(--mono)", fontSize: 11, color: "var(--muted)" }}>
                         {t.posted_at ? formatDate(t.posted_at) : t.scheduled_at ? formatDate(t.scheduled_at) : formatDate(t.created_at)}
@@ -97,39 +136,35 @@ export default function LogView() {
                       <td style={{ padding: "8px 4px" }}>
                         <span style={{ fontFamily: "var(--mono)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.04em" }}>{t.type}</span>
                       </td>
-                      <td style={{ padding: "8px 4px", maxWidth: 350, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <td style={{ padding: "8px 4px", maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {t.text || "—"}
                       </td>
                       <td style={{ padding: "8px 4px" }}>
                         <span className={`xp-queue-status ${t.status}`}>{t.status}</span>
                       </td>
-                      <td style={{ padding: "8px 4px" }}>
-                        {t.source_url ? (
-                          <a href={t.source_url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)", fontSize: 11 }}>source</a>
-                        ) : t.cta_url ? (
-                          <a href={t.cta_url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)", fontSize: 11 }}>link</a>
-                        ) : "—"}
+                      <td style={{ padding: "8px 4px", whiteSpace: "nowrap" }}>
+                        {t.cta_url && (
+                          <a href={t.cta_url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)", fontSize: 11, marginRight: 8 }}>tweet</a>
+                        )}
+                        {t.source_url && (
+                          <a href={t.source_url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--muted)", fontSize: 11 }}>source</a>
+                        )}
+                        {!t.cta_url && !t.source_url && "—"}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
 
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
-                <button
-                  className="xp-btn xp-btn-secondary"
-                  onClick={() => setPage(Math.max(0, page - 1))}
-                  disabled={page === 0}
-                >Prev</button>
-                <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--muted)" }}>
-                  {page * limit + 1}–{Math.min((page + 1) * limit, total)} of {total}
-                </span>
-                <button
-                  className="xp-btn xp-btn-secondary"
-                  onClick={() => setPage(page + 1)}
-                  disabled={(page + 1) * limit >= total}
-                >Next</button>
-              </div>
+              {totalPages > 1 && (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
+                  <button className="xp-btn xp-btn-secondary" onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0}>Prev</button>
+                  <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--muted)" }}>
+                    Page {page + 1} of {totalPages}
+                  </span>
+                  <button className="xp-btn xp-btn-secondary" onClick={() => setPage(page + 1)} disabled={page + 1 >= totalPages}>Next</button>
+                </div>
+              )}
             </>
           )}
         </div>

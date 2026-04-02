@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import NavPills from "./NavPills";
 
 interface TweetStats {
   id: string;
@@ -82,10 +83,7 @@ export default function AnalyticsView() {
       <div className="header">
         <h1>Analytics</h1>
         <div className="brand">PixieWire</div>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 8 }}>
-          <a href="/" className="xp-nav-link">Auto-Poster</a>
-          <a href="/log" className="xp-nav-link">Log</a>
-        </div>
+        <NavPills />
       </div>
 
       <div className="xp-container">

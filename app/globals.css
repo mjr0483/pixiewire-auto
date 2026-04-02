@@ -64,12 +64,17 @@ body {
 
 .footer { text-align: center; margin-top: 20px; font-family: var(--mono); font-size: 9px; color: var(--rule); letter-spacing: 0.06em; text-transform: uppercase; }
 
-.xp-nav-link {
-  font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--muted); text-decoration: none; border: 1px solid var(--rule-light); border-radius: 6px;
-  padding: 5px 12px; transition: all 0.15s;
+.xp-pill {
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  color: var(--ink); text-decoration: none; border: 1px solid var(--rule);
+  border-radius: 20px; padding: 6px 16px; transition: all 0.15s;
+  background: transparent;
 }
-.xp-nav-link:hover { border-color: var(--accent); color: var(--accent); }
+.xp-pill:hover { border-color: var(--ink); background: rgba(26,23,20,0.04); }
+.xp-pill-active {
+  background: var(--ink); color: var(--paper); border-color: var(--ink);
+}
+.xp-pill-active:hover { background: var(--ink); color: var(--paper); }
 
 @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } .header { padding: 20px 0 4px; } .header .brand { font-size: 24px; } }
 

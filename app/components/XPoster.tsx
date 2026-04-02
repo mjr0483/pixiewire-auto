@@ -7,6 +7,7 @@ import PostSchedule from "./PostSchedule";
 import StatusDashboard from "./StatusDashboard";
 import TweetQueue from "./TweetQueue";
 import ContentTypeSchema from "./ContentTypeSchema";
+import NavPills from "./NavPills";
 
 interface ContentType {
   id: string;
@@ -120,10 +121,7 @@ export default function XPosterPage() {
       <div className="header">
         <h1>Auto-Poster</h1>
         <div className="brand">PixieWire</div>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 8 }}>
-          <a href="/log" className="xp-nav-link">Log</a>
-          <a href="/analytics" className="xp-nav-link">Analytics</a>
-        </div>
+        <NavPills />
       </div>
 
       {error && (
