@@ -7,6 +7,7 @@ import PostSchedule from "./PostSchedule";
 import StatusDashboard from "./StatusDashboard";
 import TweetQueue from "./TweetQueue";
 import ContentTypeSchema from "./ContentTypeSchema";
+import OnDemand from "./OnDemand";
 import NavPills from "./NavPills";
 
 interface ContentType {
@@ -137,6 +138,10 @@ export default function XPosterPage() {
               settings={settings}
               queue={queue}
               onToggle={(enabled) => saveSettings({ posting_enabled: enabled })}
+            />
+            <OnDemand
+              contentTypes={contentTypes}
+              onPublished={fetchData}
             />
             <ContentTypeSchema
               contentTypes={contentTypes}
