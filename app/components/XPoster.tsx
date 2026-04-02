@@ -8,6 +8,7 @@ import StatusDashboard from "./StatusDashboard";
 import TweetQueue from "./TweetQueue";
 import ContentTypeSchema from "./ContentTypeSchema";
 import OnDemand from "./OnDemand";
+import AIPipeline from "./AIPipeline";
 import NavPills from "./NavPills";
 
 interface ContentType {
@@ -38,6 +39,8 @@ interface Settings {
   content_types: ContentType[] | null;
   last_tick_at: string | null;
   last_tick_result: { actions: string[] } | null;
+  use_grok: boolean;
+  claude_polish: boolean;
 }
 
 interface QueueItem {
@@ -138,6 +141,12 @@ export default function XPosterPage() {
               settings={settings}
               queue={queue}
               onToggle={(enabled) => saveSettings({ posting_enabled: enabled })}
+            />
+            <AIPipeline
+              useGrok={settings.use_grok !== false}
+              claudePolish={settings.claude_polish === true}
+              onToggleGrok={(val) => saveSettings({ use_grok: val } as any)}
+              onTogglePolish={(val) => saveSettings({ claude_polish: val } as any)}
             />
             <OnDemand
               contentTypes={contentTypes}

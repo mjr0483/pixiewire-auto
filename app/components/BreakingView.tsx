@@ -23,34 +23,43 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("en-US", {
-    timeZone: "America/New_York", hour: "numeric", minute: "2-digit", hour12: true,
-  });
-}
-
 export default function BreakingView() {
   const [findings, setFindings] = useState<MonitorItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [monitorActive, setMonitorActive] = useState<boolean | null>(null);
+  const [toggling, setToggling] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState<string | null>(null);
 
   const fetchFindings = () => {
     fetch("/api/x-poster/monitor")
       .then((r) => r.json())
-      .then((data) => {
-        setFindings(data.findings || []);
-        setLoading(false);
-      });
+      .then((data) => { setFindings(data.findings || []); setLoading(false); });
   };
 
-  useEffect(() => { fetchFindings(); }, []);
+  const fetchToggleState = () => {
+    fetch("/api/x-poster/monitor-toggle")
+      .then((r) => r.json())
+      .then((data) => { if (data.ok) setMonitorActive(data.active); });
+  };
 
-  // Auto-refresh every 60 seconds
+  useEffect(() => { fetchFindings(); fetchToggleState(); }, []);
   useEffect(() => {
     const interval = setInterval(fetchFindings, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  const toggleMonitor = async () => {
+    setToggling(true);
+    const res = await fetch("/api/x-poster/monitor-toggle", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active: !monitorActive }),
+    });
+    const data = await res.json();
+    if (data.ok) setMonitorActive(data.active);
+    setToggling(false);
+  };
 
   const runManualScan = async () => {
     setScanning(true);
@@ -85,16 +94,35 @@ export default function BreakingView() {
       </div>
 
       <div className="xp-container">
-        {/* Cron status */}
         <div className="xp-section">
-          <h2>Monitor Status</h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <h2 style={{ margin: 0 }}>Monitor Status</h2>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: monitorActive ? "var(--success)" : "var(--muted)" }}>
+                {monitorActive === null ? "..." : monitorActive ? "ACTIVE" : "OFF"}
+              </span>
+              <label className="xp-toggle">
+                <input
+                  type="checkbox"
+                  checked={monitorActive || false}
+                  onChange={toggleMonitor}
+                  disabled={toggling || monitorActive === null}
+                />
+                <div className="xp-toggle-track" />
+                <div className="xp-toggle-thumb" />
+              </label>
+            </div>
+          </div>
+
           <div className="xp-status-grid">
             <div className="xp-stat">
               <div className="xp-stat-label">Mode</div>
-              <div className="xp-stat-value" style={{ color: "var(--gold)" }}>Monitor Only</div>
+              <div className="xp-stat-value" style={{ color: monitorActive ? "var(--success)" : "var(--muted)" }}>
+                {monitorActive ? "Monitoring" : "Disabled"}
+              </div>
             </div>
             <div className="xp-stat">
-              <div className="xp-stat-label">Cron Schedule</div>
+              <div className="xp-stat-label">Schedule</div>
               <div className="xp-stat-value" style={{ fontSize: 14 }}>Every 15 min via n8n</div>
             </div>
             <div className="xp-stat">
@@ -123,21 +151,20 @@ export default function BreakingView() {
               How it works
             </span>
             <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 12, lineHeight: 1.5 }}>
-              Searches X every 15 minutes for Disney/theme park tweets with high engagement (50+ likes or 20+ retweets).
-              Findings are logged here for your review. Nothing is auto-posted — you approve each breaking tweet.
-              Requires X API Basic tier for search. Free tier will show an error message.
+              When active, searches X every 15 minutes for Disney/theme park tweets with high engagement.
+              Findings are logged here for your review. Nothing is auto-posted.
+              Uses X API search (requires Basic tier). Pushover alert on new findings.
             </div>
           </div>
         </div>
 
-        {/* Findings for review */}
         <div className="xp-section">
           <h2>Pending Review ({monitorItems.length})</h2>
           {loading ? (
             <div style={{ textAlign: "center", color: "var(--muted)", padding: 20 }}>Loading...</div>
           ) : monitorItems.length === 0 ? (
             <div style={{ color: "var(--muted)", fontSize: 13, padding: "10px 0" }}>
-              No breaking news items pending review. The monitor will surface items here when it detects significant Disney news.
+              No breaking news items pending review.
             </div>
           ) : (
             monitorItems.map((item) => (
@@ -152,19 +179,16 @@ export default function BreakingView() {
                       )}
                     </div>
                   </div>
-                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                    <button className="xp-btn xp-btn-danger" onClick={async () => {
-                      await fetch("/api/x-poster/queue", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: item.id, action: "skip" }) });
-                      fetchFindings();
-                    }} style={{ padding: "6px 12px", fontSize: 10 }}>Dismiss</button>
-                  </div>
+                  <button className="xp-btn xp-btn-danger" onClick={async () => {
+                    await fetch("/api/x-poster/queue", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: item.id, action: "skip" }) });
+                    fetchFindings();
+                  }} style={{ padding: "6px 12px", fontSize: 10 }}>Dismiss</button>
                 </div>
               </div>
             ))
           )}
         </div>
 
-        {/* Recent dismissed */}
         {dismissedItems.length > 0 && (
           <div className="xp-section">
             <h2>Recently Dismissed</h2>

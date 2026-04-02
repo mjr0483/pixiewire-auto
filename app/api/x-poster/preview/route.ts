@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSettings, insertTweet } from "@/lib/supabase";
-import { generateTweet } from "@/lib/claude";
+import { generateTweet, polishTweet } from "@/lib/claude";
+import { grokResearchAndDraft } from "@/lib/grok";
 import { resolveContentTypes, buildPrompt } from "@/lib/content-types";
 import { getCurrentTimeET } from "@/lib/eastern-time";
 import { postTweet, getXCredentials } from "@/lib/x-api";
@@ -15,17 +16,39 @@ export async function POST(req: NextRequest) {
     const settings = await getSettings();
     const contentTypes = resolveContentTypes(settings.content_types);
     const ct = contentTypes.find((t) => t.id === content_type);
+    const useGrok = (settings as any).use_grok !== false;
+    const claudePolish = (settings as any).claude_polish === true;
 
     if (action === "generate") {
       if (!ct) {
         return NextResponse.json({ ok: false, error: `Unknown content type: ${content_type}` });
       }
+
       const headlines = await getRecentHeadlines(12, 20);
       const headlinesText = formatHeadlinesForPrompt(headlines);
-      const prompt = buildPrompt(settings.grok_prompt || "", ct, getCurrentTimeET(), headlinesText);
-      const model = settings.generation_model || "claude-haiku-4-5-20251001";
-      const generated = await generateTweet(prompt, model);
-      return NextResponse.json({ ok: true, text: generated, content_type: ct.id });
+      let generated: string;
+      let source: string;
+
+      if (useGrok && process.env.XAI_API_KEY) {
+        // Grok: research + draft with live X/web search
+        const result = await grokResearchAndDraft(ct.id, ct.maxChars, headlinesText);
+        generated = result.text;
+        source = "grok";
+
+        // Optional Claude polish
+        if (claudePolish && process.env.ANTHROPIC_API_KEY) {
+          generated = await polishTweet(generated, ct.id, ct.maxChars);
+          source = "grok+claude";
+        }
+      } else {
+        // Fallback: Claude only with headlines
+        const prompt = buildPrompt(settings.grok_prompt || "", ct, getCurrentTimeET(), headlinesText);
+        const model = settings.generation_model || "claude-haiku-4-5-20251001";
+        generated = await generateTweet(prompt, model);
+        source = "claude";
+      }
+
+      return NextResponse.json({ ok: true, text: generated, content_type: ct.id, source });
     }
 
     if (action === "publish") {

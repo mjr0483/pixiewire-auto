@@ -7,6 +7,8 @@ import { resolveContentTypes, buildPrompt } from "@/lib/content-types";
 import { postTweet, getXCredentials } from "@/lib/x-api";
 import { sendPushover } from "@/lib/pushover";
 import { getRecentHeadlines, formatHeadlinesForPrompt } from "@/lib/headlines";
+import { grokResearchAndDraft } from "@/lib/grok";
+import { polishTweet } from "@/lib/claude";
 
 export async function POST(req: NextRequest) {
   const authError = requireAuth(req);
@@ -57,9 +59,21 @@ export async function POST(req: NextRequest) {
         }
 
         try {
-          const prompt = buildPrompt(settings.grok_prompt || "", ct, currentTime, headlinesText);
-          const model = settings.generation_model || "claude-haiku-4-5-20251001";
-          const text = await generateTweet(prompt, model);
+          const useGrok = (settings as any).use_grok !== false;
+          const claudePolish = (settings as any).claude_polish === true;
+          let text: string;
+
+          if (useGrok && process.env.XAI_API_KEY) {
+            const result = await grokResearchAndDraft(ct.id, ct.maxChars, headlinesText);
+            text = result.text;
+            if (claudePolish && process.env.ANTHROPIC_API_KEY) {
+              text = await polishTweet(text, ct.id, ct.maxChars);
+            }
+          } else {
+            const prompt = buildPrompt(settings.grok_prompt || "", ct, currentTime, headlinesText);
+            const model = settings.generation_model || "claude-haiku-4-5-20251001";
+            text = await generateTweet(prompt, model);
+          }
           const scheduledAt = getScheduledTimestampUTC(slot.time, todayET);
 
           await insertTweet({
