@@ -41,9 +41,7 @@ VOICE RULES:
 - No fabricated numbers (wait times, prices, attendance) you can't verify
 - No URLs in the tweet text — those are handled separately by the system
 - No hashtags unless they're genuinely trending
-- No emojis — they cause encoding issues in the posting pipeline
-- Use plain ASCII dashes (-) not em dashes
-- Stick to standard ASCII characters only
+- Emojis are fine when they add value — don't overdo it
 
 ---
 
