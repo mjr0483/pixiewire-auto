@@ -94,36 +94,41 @@ export default function BreakingView() {
       </div>
 
       <div className="xp-container">
-        <div className="xp-section">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <h2 style={{ margin: 0 }}>Monitor Status</h2>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: monitorActive ? "var(--success)" : "var(--muted)" }}>
-                {monitorActive === null ? "..." : monitorActive ? "ACTIVE" : "OFF"}
-              </span>
-              <label className="xp-toggle">
-                <input
-                  type="checkbox"
-                  checked={monitorActive || false}
-                  onChange={toggleMonitor}
-                  disabled={toggling || monitorActive === null}
-                />
-                <div className="xp-toggle-track" />
-                <div className="xp-toggle-thumb" />
-              </label>
-            </div>
-          </div>
-
-          <div className="xp-status-grid">
-            <div className="xp-stat">
-              <div className="xp-stat-label">Mode</div>
-              <div className="xp-stat-value" style={{ color: monitorActive ? "var(--success)" : "var(--muted)" }}>
-                {monitorActive ? "Monitoring" : "Disabled"}
+        {/* Big clear ON/OFF banner */}
+        <div className="xp-section" style={{
+          background: monitorActive ? "var(--success-soft)" : "var(--paper)",
+          border: monitorActive ? "2px solid var(--success)" : "2px solid var(--rule)",
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: monitorActive ? "var(--success)" : "var(--muted)" }}>
+                {monitorActive === null ? "Loading..." : monitorActive ? "MONITOR IS ON" : "MONITOR IS OFF"}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                {monitorActive ? "Scanning X for breaking Disney news every 15 minutes" : "Breaking news scanning is disabled"}
               </div>
             </div>
+            <button
+              onClick={toggleMonitor}
+              disabled={toggling || monitorActive === null}
+              className="xp-btn"
+              style={{
+                padding: "12px 28px", fontSize: 14, fontWeight: 600, borderRadius: 10,
+                background: monitorActive ? "var(--accent)" : "var(--success)",
+                color: "white", border: "none",
+              }}
+            >
+              {toggling ? "..." : monitorActive ? "Turn Off" : "Turn On"}
+            </button>
+          </div>
+        </div>
+
+        <div className="xp-section">
+          <h2>Status</h2>
+          <div className="xp-status-grid">
             <div className="xp-stat">
               <div className="xp-stat-label">Schedule</div>
-              <div className="xp-stat-value" style={{ fontSize: 14 }}>Every 15 min via n8n</div>
+              <div className="xp-stat-value" style={{ fontSize: 14 }}>Every 15 min</div>
             </div>
             <div className="xp-stat">
               <div className="xp-stat-label">Pending Review</div>
@@ -132,6 +137,10 @@ export default function BreakingView() {
             <div className="xp-stat">
               <div className="xp-stat-label">Dismissed</div>
               <div className="xp-stat-value" style={{ color: "var(--muted)" }}>{dismissedItems.length}</div>
+            </div>
+            <div className="xp-stat">
+              <div className="xp-stat-label">Cost</div>
+              <div className="xp-stat-value" style={{ fontSize: 14 }}>X API search</div>
             </div>
           </div>
 

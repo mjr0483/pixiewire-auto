@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const N8N_URL = process.env.N8N_INTERNAL_URL || "http://n8n:5678";
+const N8N_URL = process.env.N8N_INTERNAL_URL || "http://host.docker.internal:5678";
 const WORKFLOW_ID = "WlQYAH7URIYLiCJR";
 
 function getN8nKey(): string {
