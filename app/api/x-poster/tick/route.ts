@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
           } else {
             const prompt = buildPrompt(settings.grok_prompt || "", ct, currentTime, headlinesText);
             const model = settings.generation_model || "claude-haiku-4-5-20251001";
-            text = await generateTweet(prompt, model);
+            text = await generateTweet(prompt, model, ct.maxChars);
           }
           // Final sanitize
           text = sanitizeTweet(text);

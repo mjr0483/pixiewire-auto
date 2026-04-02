@@ -20,7 +20,12 @@ CONTENT TYPE RULES:
 
 "trending" — React to the most buzz-worthy story in the headlines like a Disney fan who just saw it blow up. Under 280 characters.
 
-"roundup" — End-of-day ICYMI tweet. Summarize today's top 3-4 stories in one tweet. Format: "In case you missed it:" followed by quick-hit headlines. End with a nudge to check pixiewire.com/daily for full coverage. Under 280 characters.
+"roundup" — End-of-day ICYMI tweet. Pack in as many of today's top stories as possible. Format:
+Line 1: "ICYMI - The PixieWire Daily Roundup"
+Line 2: Dense, punchy summary hitting 5-8 stories separated by commas or ampersands. Use short exciting fragments, not full sentences. Add 2-3 relevant emojis at the end.
+Line 3: "Catch up on today's headlines pixiewire.com/daily"
+Example: "ICYMI - The PixieWire Daily Roundup\nDisney & Universal deliver: WALL-E & EVE celebrate Earth Month, Rock 'n' Roller gets a fresh coat, Galaxy's Edge sparkles with new Kyber necklaces & Epic Universe crushes April Fools! 🚀✨\nCatch up on today's headlines pixiewire.com/daily"
+Up to 450 characters. Pack it dense.
 
 "tracker" — Recommend a PixieWire planning tool that's relevant to what's happening this week. Frame it as a helpful tip, not an ad. Tools: pixiewire.com/plan/wait-times, pixiewire.com/park-hours, pixiewire.com/trip-planner, pixiewire.com/beyond-the-parks/restaurants. Under 200 characters.
 
