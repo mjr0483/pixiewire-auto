@@ -32,6 +32,12 @@ export function getContentType(id: string, types?: ContentType[]): ContentType |
   return list.find((ct) => ct.id === id);
 }
 
-export function buildPrompt(masterPrompt: string, contentType: ContentType, currentTime: string): string {
-  return masterPrompt.replace(/\{\{CONTENT_TYPE\}\}/g, contentType.id);
+export function buildPrompt(masterPrompt: string, contentType: ContentType, currentTime: string, headlines?: string): string {
+  let prompt = masterPrompt.replace(/\{\{CONTENT_TYPE\}\}/g, contentType.id);
+
+  if (headlines) {
+    prompt += `\n\n---\n\nCURRENT TIME: ${currentTime} ET\n\nTODAY'S HEADLINES FROM PIXIEWIRE DAILY (use these as your source material):\n${headlines}`;
+  }
+
+  return prompt;
 }

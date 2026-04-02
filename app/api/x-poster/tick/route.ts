@@ -6,6 +6,7 @@ import { generateTweet } from "@/lib/claude";
 import { resolveContentTypes, buildPrompt } from "@/lib/content-types";
 import { postTweet, getXCredentials } from "@/lib/x-api";
 import { sendPushover } from "@/lib/pushover";
+import { getRecentHeadlines, formatHeadlinesForPrompt } from "@/lib/headlines";
 
 export async function POST(req: NextRequest) {
   const authError = requireAuth(req);
@@ -34,6 +35,10 @@ export async function POST(req: NextRequest) {
     const queue = await getTodayQueue(todayStart);
     const leadMinutes = settings.generation_lead_minutes || 10;
 
+    // Fetch headlines once for all slots
+    const headlines = await getRecentHeadlines(12, 20);
+    const headlinesText = formatHeadlinesForPrompt(headlines);
+
     const [currentH, currentM] = currentTime.split(":").map(Number);
     const currentTotalMinutes = currentH * 60 + currentM;
 
@@ -52,7 +57,7 @@ export async function POST(req: NextRequest) {
         }
 
         try {
-          const prompt = buildPrompt(settings.grok_prompt || "", ct, currentTime);
+          const prompt = buildPrompt(settings.grok_prompt || "", ct, currentTime, headlinesText);
           const model = settings.generation_model || "claude-haiku-4-5-20251001";
           const text = await generateTweet(prompt, model);
           const scheduledAt = getScheduledTimestampUTC(slot.time, todayET);

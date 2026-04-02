@@ -5,6 +5,7 @@ import { resolveContentTypes, buildPrompt } from "@/lib/content-types";
 import { getCurrentTimeET } from "@/lib/eastern-time";
 import { postTweet, getXCredentials } from "@/lib/x-api";
 import { sendPushover } from "@/lib/pushover";
+import { getRecentHeadlines, formatHeadlinesForPrompt } from "@/lib/headlines";
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,7 +20,9 @@ export async function POST(req: NextRequest) {
       if (!ct) {
         return NextResponse.json({ ok: false, error: `Unknown content type: ${content_type}` });
       }
-      const prompt = buildPrompt(settings.grok_prompt || "", ct, getCurrentTimeET());
+      const headlines = await getRecentHeadlines(12, 20);
+      const headlinesText = formatHeadlinesForPrompt(headlines);
+      const prompt = buildPrompt(settings.grok_prompt || "", ct, getCurrentTimeET(), headlinesText);
       const model = settings.generation_model || "claude-haiku-4-5-20251001";
       const generated = await generateTweet(prompt, model);
       return NextResponse.json({ ok: true, text: generated, content_type: ct.id });
