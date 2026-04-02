@@ -48,15 +48,30 @@ export default function LogView() {
 
   const [page, setPage] = useState(0);
   const perPage = 25;
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchTweets = () => {
     fetch("/api/x-poster/log?limit=500")
       .then((r) => r.json())
-      .then((data) => {
-        setAllTweets(data.tweets || []);
-        setLoading(false);
-      });
-  }, []);
+      .then((data) => { setAllTweets(data.tweets || []); setLoading(false); });
+  };
+
+  const syncWithX = async () => {
+    setSyncing(true);
+    setSyncResult(null);
+    const res = await fetch("/api/x-poster/audit", { method: "POST" });
+    const data = await res.json();
+    if (data.ok) {
+      setSyncResult(`Checked ${data.checked}, ${data.deleted} deleted`);
+      fetchTweets();
+    } else {
+      setSyncResult(data.error || "Sync failed");
+    }
+    setSyncing(false);
+  };
+
+  useEffect(() => { fetchTweets(); }, []);
 
   const types = useMemo(() => [...new Set(allTweets.map((t) => t.type))].sort(), [allTweets]);
   const statuses = useMemo(() => [...new Set(allTweets.map((t) => t.status))].sort(), [allTweets]);
@@ -136,6 +151,17 @@ export default function LogView() {
             <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--muted)" }}>
               {filtered.length} result{filtered.length !== 1 ? "s" : ""}
             </span>
+            <button
+              className="xp-btn xp-btn-secondary"
+              onClick={syncWithX}
+              disabled={syncing}
+              style={{ padding: "5px 10px", fontSize: 10, marginLeft: "auto" }}
+            >
+              {syncing ? "Syncing..." : "Sync with X"}
+            </button>
+            {syncResult && (
+              <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--muted)" }}>{syncResult}</span>
+            )}
           </div>
         </div>
 
