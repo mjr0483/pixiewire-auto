@@ -13,8 +13,8 @@ export function sanitizeTweet(text: string): string {
   clean = clean.replace(/[¹²³⁴⁵⁶⁷⁸⁹⁰]+/g, "");
   // Markdown links
   clean = clean.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
-  // Bare URLs
-  clean = clean.replace(/https?:\/\/\S+/g, "");
+  // Bare URLs — but keep pixiewire.com links (they're intentional CTAs)
+  clean = clean.replace(/https?:\/\/(?!pixiewire\.com)\S+/g, "");
   // Empty parens left after stripping
   clean = clean.replace(/\(\s*\)/g, "");
   // Leading/trailing quotes wrapping entire tweet

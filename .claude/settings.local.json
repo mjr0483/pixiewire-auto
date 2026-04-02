@@ -9,7 +9,8 @@
       "Grep(*)",
       "Agent(*)",
       "mcp__0f16a09c-adbb-4149-a7f2-8ead0b53c9bb__*",
-      "mcp__5c1a1840-a683-49af-adcc-2454cc333ca5__*"
+      "mcp__5c1a1840-a683-49af-adcc-2454cc333ca5__*",
+      "mcp__scheduled-tasks__list_scheduled_tasks"
     ],
     "deny": []
   }
