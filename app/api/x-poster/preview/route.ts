@@ -4,9 +4,8 @@ import { generateTweet } from "@/lib/claude";
 import { resolveContentTypes, buildPrompt } from "@/lib/content-types";
 import { getCurrentTimeET } from "@/lib/eastern-time";
 import { postTweet, getXCredentials } from "@/lib/x-api";
+import { sendPushover } from "@/lib/pushover";
 
-// POST with action: "generate" — generates a tweet preview
-// POST with action: "publish" — posts a tweet to X and saves to queue
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -33,7 +32,6 @@ export async function POST(req: NextRequest) {
       const credentials = getXCredentials();
       const result = await postTweet(credentials, text);
 
-      // Save to queue
       await insertTweet({
         topic: ct?.label || content_type,
         type: content_type || "manual",
@@ -44,6 +42,13 @@ export async function POST(req: NextRequest) {
         tweet_id: result.id,
       } as any);
 
+      await sendPushover({
+        title: "On-Demand Tweet Posted",
+        message: `${ct?.label || content_type}\n${text.slice(0, 140)}`,
+        url: `https://x.com/PixieWireNews/status/${result.id}`,
+        url_title: "View on X",
+      });
+
       return NextResponse.json({
         ok: true,
         tweet_id: result.id,
@@ -53,6 +58,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: false, error: `Unknown action: ${action}` });
   } catch (e: any) {
+    await sendPushover({
+      title: "Tweet Publish Failed",
+      message: e?.message?.slice(0, 140) || "Unknown error",
+      priority: 1,
+      sound: "falling",
+    });
     return NextResponse.json({ ok: false, error: e?.message || String(e) }, { status: 500 });
   }
 }

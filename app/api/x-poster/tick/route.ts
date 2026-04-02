@@ -115,6 +115,23 @@ export async function POST(req: NextRequest) {
     // Record tick result for dashboard visibility
     await updateSettings({ last_tick_at: new Date().toISOString(), last_tick_result: { actions } } as any);
 
+    // Daily summary: if last slot of the day just posted, send summary
+    const refreshedQueue = await getTodayQueue(todayStart);
+    const postedCount = refreshedQueue.filter((q) => q.status === "posted").length;
+    const failedCount = refreshedQueue.filter((q) => q.status === "failed").length;
+    const totalSlots = schedule.schedule.length;
+    const allDone = (postedCount + failedCount) >= totalSlots && totalSlots > 0;
+
+    if (allDone && actions.some((a) => a.includes("posted to X"))) {
+      await sendPushover({
+        title: "Daily Summary",
+        message: `${postedCount}/${totalSlots} posted${failedCount > 0 ? `, ${failedCount} failed` : ""} today`,
+        url: "https://auto.pixiewire.com/log",
+        url_title: "View Log",
+        sound: "magic",
+      });
+    }
+
     return NextResponse.json({ ok: true, actions });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message, actions }, { status: 500 });
