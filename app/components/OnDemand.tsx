@@ -34,12 +34,7 @@ export default function OnDemand({ contentTypes, onPublished }: Props) {
       });
       const data = await res.json();
       if (data.ok) {
-        // Try to parse JSON response from Claude
-        let tweetText = data.text;
-        try {
-          const parsed = JSON.parse(data.text);
-          if (parsed.tweet?.text) tweetText = parsed.tweet.text;
-        } catch { /* not JSON, use raw text */ }
+        const tweetText = data.text.replace(/^["']|["']$/g, "").trim();
         setGeneratedText(tweetText);
         setCharCount(tweetText.length);
       } else {
