@@ -50,7 +50,7 @@ body {
 .card-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
 .card-body { flex: 1; min-width: 0; }
 .card-name { font-weight: 600; font-size: 14px; line-height: 1.2; }
-.card-desc { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.2; }
+.card-desc { font-size: 12px; color: #5a5046; margin-top: 2px; line-height: 1.2; }
 .card-arrow { color: var(--rule); font-size: 14px; flex-shrink: 0; transition: color 0.15s; }
 .card:hover .card-arrow { color: var(--accent); }
 
@@ -141,7 +141,7 @@ body {
 
 .xp-status-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .xp-stat { padding: 10px; background: var(--paper); border-radius: 8px; }
-.xp-stat-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.xp-stat-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #5a5046; }
 .xp-stat-value { font-size: 16px; font-weight: 600; margin-top: 4px; }
 
 .xp-toggle { position: relative; width: 48px; height: 26px; cursor: pointer; }
