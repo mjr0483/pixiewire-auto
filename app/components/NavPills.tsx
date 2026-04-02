@@ -7,6 +7,7 @@ const PAGES = [
   { href: "/log", label: "Log" },
   { href: "/analytics", label: "Analytics" },
   { href: "/breaking", label: "Breaking" },
+  { href: "/agent", label: "Agent" },
 ];
 
 export default function NavPills() {
