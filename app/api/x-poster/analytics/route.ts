@@ -1,45 +1,36 @@
 import { NextResponse } from "next/server";
-import { signOAuthRequest } from "@/lib/x-api";
+import { TwitterApi } from "twitter-api-v2";
 
-function getPostizCredentials() {
-  return {
-    api_key: process.env.POSTIZ_X_API_KEY!,
-    api_secret: process.env.POSTIZ_X_API_SECRET!,
-    access_token: process.env.POSTIZ_X_ACCESS_TOKEN!,
-    access_token_secret: process.env.POSTIZ_X_ACCESS_TOKEN_SECRET!,
-  };
+function getPostizClient(): TwitterApi {
+  const [accessToken, accessSecret] = (process.env.POSTIZ_X_ACCESS_TOKEN_FULL || "").split(":");
+  return new TwitterApi({
+    appKey: process.env.POSTIZ_X_API_KEY!,
+    appSecret: process.env.POSTIZ_X_API_SECRET!,
+    accessToken,
+    accessSecret,
+  });
 }
 
 export async function GET() {
   try {
-    const creds = getPostizCredentials();
-    if (!creds.api_key || !creds.access_token) {
+    if (!process.env.POSTIZ_X_API_KEY || !process.env.POSTIZ_X_ACCESS_TOKEN_FULL) {
       return NextResponse.json({ ok: false, error: "Postiz X credentials not configured" });
     }
 
-    // Get user ID first
-    const meUrl = "https://api.twitter.com/2/users/me";
-    const meHeaders = signOAuthRequest("GET", meUrl, creds);
-    const meRes = await fetch(meUrl, { headers: meHeaders });
-    if (!meRes.ok) {
-      const body = await meRes.text();
-      return NextResponse.json({ ok: false, error: `User lookup failed: ${meRes.status} ${body}` });
-    }
-    const meData = await meRes.json();
-    const userId = meData.data?.id;
+    const client = getPostizClient();
+
+    // Get user info
+    const me = await client.v2.me();
+    const userId = me.data.id;
 
     // Get recent tweets with metrics
-    const tweetsUrl = `https://api.twitter.com/2/users/${userId}/tweets?max_results=20&tweet.fields=created_at,public_metrics&exclude=retweets,replies`;
-    const tweetsHeaders = signOAuthRequest("GET", tweetsUrl, creds);
-    const tweetsRes = await fetch(tweetsUrl, { headers: tweetsHeaders });
+    const timeline = await client.v2.userTimeline(userId, {
+      max_results: 20,
+      exclude: ["retweets", "replies"],
+      "tweet.fields": ["public_metrics", "created_at"],
+    });
 
-    if (!tweetsRes.ok) {
-      const body = await tweetsRes.text();
-      return NextResponse.json({ ok: false, error: `Tweets fetch failed: ${tweetsRes.status} ${body}` });
-    }
-
-    const tweetsData = await tweetsRes.json();
-    const tweets = (tweetsData.data || []).map((t: any) => ({
+    const tweets = (timeline.data.data || []).map((t) => ({
       id: t.id,
       text: t.text,
       created_at: t.created_at,
@@ -51,9 +42,8 @@ export async function GET() {
       bookmarks: t.public_metrics?.bookmark_count || 0,
     }));
 
-    // Compute totals
     const totals = tweets.reduce(
-      (acc: any, t: any) => ({
+      (acc, t) => ({
         impressions: acc.impressions + t.impressions,
         likes: acc.likes + t.likes,
         retweets: acc.retweets + t.retweets,
@@ -64,7 +54,8 @@ export async function GET() {
     );
 
     return NextResponse.json({ ok: true, tweets, totals, count: tweets.length });
-  } catch (e) {
-    return NextResponse.json({ ok: false, error: (e as Error).message }, { status: 500 });
+  } catch (e: any) {
+    const msg = e?.data?.detail || e?.message || String(e);
+    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }
 }
