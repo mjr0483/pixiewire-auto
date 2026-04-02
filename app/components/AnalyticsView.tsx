@@ -3,7 +3,19 @@
 import { useState, useEffect } from "react";
 import NavPills from "./NavPills";
 
-interface TweetStats {
+interface TweetMetric {
+  id: string;
+  text: string;
+  created_at: string;
+  impressions: number;
+  likes: number;
+  retweets: number;
+  replies: number;
+  quotes: number;
+  bookmarks: number;
+}
+
+interface LogTweet {
   id: string;
   type: string;
   text: string;
@@ -13,7 +25,6 @@ interface TweetStats {
 
 interface DaySummary {
   date: string;
-  total: number;
   posted: number;
   failed: number;
   skipped: number;
@@ -22,40 +33,47 @@ interface DaySummary {
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
-    timeZone: "America/New_York",
-    weekday: "short",
-    month: "short",
-    day: "numeric",
+    timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric",
   });
 }
 
 export default function AnalyticsView() {
-  const [tweets, setTweets] = useState<TweetStats[]>([]);
+  const [logTweets, setLogTweets] = useState<LogTweet[]>([]);
+  const [metrics, setMetrics] = useState<TweetMetric[]>([]);
+  const [totals, setTotals] = useState<{ impressions: number; likes: number; retweets: number; replies: number; bookmarks: number } | null>(null);
+  const [metricsError, setMetricsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [xApiNote, setXApiNote] = useState<string | null>(null);
+  const [metricsLoading, setMetricsLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/x-poster/log?limit=200")
       .then((r) => r.json())
+      .then((data) => { setLogTweets(data.tweets || []); setLoading(false); });
+
+    fetch("/api/x-poster/analytics")
+      .then((r) => r.json())
       .then((data) => {
-        setTweets(data.tweets || []);
-        setLoading(false);
-      });
+        if (data.ok) {
+          setMetrics(data.tweets || []);
+          setTotals(data.totals || null);
+        } else {
+          setMetricsError(data.error);
+        }
+        setMetricsLoading(false);
+      })
+      .catch((e) => { setMetricsError(e.message); setMetricsLoading(false); });
   }, []);
 
-  // Group by day
-  const byDay: Record<string, TweetStats[]> = {};
-  tweets.forEach((t) => {
-    const date = t.posted_at
-      ? new Date(t.posted_at).toLocaleDateString("en-CA", { timeZone: "America/New_York" })
-      : new Date(t.status === "posted" ? t.posted_at : "").toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-    const key = t.posted_at ? new Date(t.posted_at).toLocaleDateString("en-CA", { timeZone: "America/New_York" }) : "unposted";
+  // Group log tweets by day
+  const byDay: Record<string, LogTweet[]> = {};
+  logTweets.forEach((t) => {
+    if (!t.posted_at) return;
+    const key = new Date(t.posted_at).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
     if (!byDay[key]) byDay[key] = [];
     byDay[key].push(t);
   });
 
   const days: DaySummary[] = Object.entries(byDay)
-    .filter(([key]) => key !== "unposted")
     .sort(([a], [b]) => b.localeCompare(a))
     .slice(0, 14)
     .map(([date, items]) => {
@@ -63,7 +81,6 @@ export default function AnalyticsView() {
       items.forEach((t) => { types[t.type] = (types[t.type] || 0) + 1; });
       return {
         date,
-        total: items.length,
         posted: items.filter((t) => t.status === "posted").length,
         failed: items.filter((t) => t.status === "failed").length,
         skipped: items.filter((t) => t.status === "skipped").length,
@@ -71,10 +88,10 @@ export default function AnalyticsView() {
       };
     });
 
-  const totalPosted = tweets.filter((t) => t.status === "posted").length;
-  const totalFailed = tweets.filter((t) => t.status === "failed").length;
+  const totalPosted = logTweets.filter((t) => t.status === "posted").length;
+  const totalFailed = logTweets.filter((t) => t.status === "failed").length;
   const typeBreakdown: Record<string, number> = {};
-  tweets.filter((t) => t.status === "posted").forEach((t) => {
+  logTweets.filter((t) => t.status === "posted").forEach((t) => {
     typeBreakdown[t.type] = (typeBreakdown[t.type] || 0) + 1;
   });
 
@@ -87,13 +104,74 @@ export default function AnalyticsView() {
       </div>
 
       <div className="xp-container">
+        {/* X Engagement — real data from Postiz credentials */}
+        <div className="xp-section">
+          <h2>X Engagement (Last 20 Tweets)</h2>
+          {metricsLoading ? (
+            <div style={{ color: "var(--muted)", fontSize: 13, padding: 10 }}>Loading metrics from X...</div>
+          ) : metricsError ? (
+            <div style={{ color: "var(--accent)", fontSize: 13, padding: 10 }}>{metricsError}</div>
+          ) : totals ? (
+            <>
+              <div className="xp-status-grid">
+                <div className="xp-stat">
+                  <div className="xp-stat-label">Impressions</div>
+                  <div className="xp-stat-value">{totals.impressions.toLocaleString()}</div>
+                </div>
+                <div className="xp-stat">
+                  <div className="xp-stat-label">Likes</div>
+                  <div className="xp-stat-value">{totals.likes.toLocaleString()}</div>
+                </div>
+                <div className="xp-stat">
+                  <div className="xp-stat-label">Retweets</div>
+                  <div className="xp-stat-value">{totals.retweets.toLocaleString()}</div>
+                </div>
+                <div className="xp-stat">
+                  <div className="xp-stat-label">Replies</div>
+                  <div className="xp-stat-value">{totals.replies.toLocaleString()}</div>
+                </div>
+              </div>
+
+              {/* Per-tweet breakdown */}
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginTop: 14 }}>
+                <thead>
+                  <tr style={{ borderBottom: "2px solid var(--rule)", fontFamily: "var(--mono)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--muted)" }}>
+                    <th style={{ padding: "6px 4px", textAlign: "left" }}>Tweet</th>
+                    <th style={{ padding: "6px 4px", textAlign: "right" }}>Impr</th>
+                    <th style={{ padding: "6px 4px", textAlign: "right" }}>Likes</th>
+                    <th style={{ padding: "6px 4px", textAlign: "right" }}>RT</th>
+                    <th style={{ padding: "6px 4px", textAlign: "right" }}>Reply</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {metrics.map((t) => (
+                    <tr key={t.id} style={{ borderBottom: "1px solid var(--rule-light)" }}>
+                      <td style={{ padding: "6px 4px", maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <a href={`https://x.com/PixieWireNews/status/${t.id}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink)", textDecoration: "none" }}>
+                          {t.text.slice(0, 80)}{t.text.length > 80 ? "..." : ""}
+                        </a>
+                      </td>
+                      <td style={{ padding: "6px 4px", textAlign: "right", fontFamily: "var(--mono)", fontSize: 11 }}>{t.impressions.toLocaleString()}</td>
+                      <td style={{ padding: "6px 4px", textAlign: "right", fontFamily: "var(--mono)", fontSize: 11 }}>{t.likes}</td>
+                      <td style={{ padding: "6px 4px", textAlign: "right", fontFamily: "var(--mono)", fontSize: 11 }}>{t.retweets}</td>
+                      <td style={{ padding: "6px 4px", textAlign: "right", fontFamily: "var(--mono)", fontSize: 11 }}>{t.replies}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          ) : (
+            <div style={{ color: "var(--muted)", fontSize: 13 }}>No metrics data available.</div>
+          )}
+        </div>
+
         {loading ? (
           <div className="xp-section" style={{ textAlign: "center", color: "var(--muted)" }}>Loading...</div>
         ) : (
           <>
-            {/* Summary stats */}
+            {/* Posting overview */}
             <div className="xp-section">
-              <h2>Overview</h2>
+              <h2>Posting Overview</h2>
               <div className="xp-status-grid">
                 <div className="xp-stat">
                   <div className="xp-stat-label">Total Posted</div>
@@ -108,7 +186,7 @@ export default function AnalyticsView() {
                   <div className="xp-stat-value">
                     {totalPosted + totalFailed > 0
                       ? `${Math.round((totalPosted / (totalPosted + totalFailed)) * 100)}%`
-                      : "—"}
+                      : "\u2014"}
                   </div>
                 </div>
                 <div className="xp-stat">
@@ -119,31 +197,24 @@ export default function AnalyticsView() {
             </div>
 
             {/* Type breakdown */}
-            <div className="xp-section">
-              <h2>Posts by Type</h2>
-              {Object.entries(typeBreakdown).length === 0 ? (
-                <div style={{ color: "var(--muted)", fontSize: 13 }}>No posted tweets yet.</div>
-              ) : (
+            {Object.entries(typeBreakdown).length > 0 && (
+              <div className="xp-section">
+                <h2>Posts by Type</h2>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {Object.entries(typeBreakdown).sort(([, a], [, b]) => b - a).map(([type, count]) => (
-                    <div key={type} style={{
-                      padding: "8px 14px", background: "var(--paper)", borderRadius: 8,
-                      fontFamily: "var(--mono)", fontSize: 12,
-                    }}>
+                    <div key={type} style={{ padding: "8px 14px", background: "var(--paper)", borderRadius: 8, fontFamily: "var(--mono)", fontSize: 12 }}>
                       <span style={{ textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--muted)", fontSize: 10 }}>{type}</span>
                       <div style={{ fontSize: 18, fontWeight: 600, marginTop: 2 }}>{count}</div>
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Daily breakdown */}
-            <div className="xp-section">
-              <h2>Daily Activity (Last 14 Days)</h2>
-              {days.length === 0 ? (
-                <div style={{ color: "var(--muted)", fontSize: 13 }}>No activity yet.</div>
-              ) : (
+            {days.length > 0 && (
+              <div className="xp-section">
+                <h2>Daily Activity (Last 14 Days)</h2>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                   <thead>
                     <tr style={{ borderBottom: "2px solid var(--rule)", fontFamily: "var(--mono)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--muted)" }}>
@@ -168,25 +239,8 @@ export default function AnalyticsView() {
                     ))}
                   </tbody>
                 </table>
-              )}
-            </div>
-
-            {/* X engagement via Postiz */}
-            <div className="xp-section">
-              <h2>X Engagement Stats</h2>
-              <div style={{ fontSize: 13, lineHeight: 1.6 }}>
-                Engagement metrics (impressions, likes, retweets) are available through Postiz, which has OAuth access to your X account analytics.
               </div>
-              <a
-                href="https://pixiepost.pixiewire.com/analytics"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="xp-btn xp-btn-primary"
-                style={{ display: "inline-block", marginTop: 10, textDecoration: "none" }}
-              >
-                View in Postiz
-              </a>
-            </div>
+            )}
           </>
         )}
       </div>
