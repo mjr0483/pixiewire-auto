@@ -5,7 +5,8 @@ const anthropic = new Anthropic();
 export async function generateTweet(prompt: string, model: string): Promise<string> {
   const message = await anthropic.messages.create({
     model,
-    max_tokens: 512,
+    max_tokens: 150,
+    system: "You write single tweets. Return ONLY the tweet text. Never return JSON, markdown, lists, briefings, or multiple tweets. One tweet, plain text, under 280 characters.",
     messages: [{ role: "user", content: prompt }],
   });
 
@@ -20,25 +21,11 @@ export async function generateTweet(prompt: string, model: string): Promise<stri
 export async function polishTweet(draft: string, contentType: string, maxChars: number): Promise<string> {
   const message = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 300,
+    max_tokens: 150,
+    system: "You polish tweets. Return ONLY the polished tweet text. Nothing else. No labels, no quotes, no explanation.",
     messages: [{
       role: "user",
-      content: `Polish this tweet draft for @PixieWireNews (Disney/Universal theme park brand).
-
-Content type: ${contentType}
-Max characters: ${maxChars}
-
-Draft:
-${draft}
-
-Rules:
-- Keep the core message, improve the voice and flow
-- Sound like a knowledgeable Disney fan, not a press release
-- No URLs in the text
-- Stay under ${maxChars} characters
-- If the draft is already good, return it as-is
-
-Return ONLY the polished tweet text. Nothing else.`,
+      content: `Polish this tweet for @PixieWireNews. Content type: ${contentType}. Max ${maxChars} chars. Keep the core message, improve voice. No URLs. Return ONLY the tweet.\n\n${draft}`,
     }],
   });
 
