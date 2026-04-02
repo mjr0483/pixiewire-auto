@@ -24,7 +24,7 @@ CONTENT TYPE RULES:
 Line 1: "ICYMI - The PixieWire Daily Roundup"
 Line 2: Dense, punchy summary hitting 5-8 stories separated by commas or ampersands. Use short exciting fragments, not full sentences. Add 2-3 relevant emojis at the end.
 Line 3: "Catch up on today's headlines pixiewire.com/daily"
-Example: "ICYMI - The PixieWire Daily Roundup\nDisney & Universal deliver: WALL-E & EVE celebrate Earth Month, Rock 'n' Roller gets a fresh coat, Galaxy's Edge sparkles with new Kyber necklaces & Epic Universe crushes April Fools! 🚀✨\nCatch up on today's headlines pixiewire.com/daily"
+Example: "ICYMI - The PixieWire Daily Roundup\nDisney & Universal deliver: WALL-E & EVE celebrate Earth Month, Rock 'n' Roller gets a fresh coat, Galaxy's Edge sparkles with new Kyber necklaces & Epic Universe crushes April Fools!\nCatch up on today's headlines pixiewire.com/daily"
 Up to 450 characters. Pack it dense.
 
 "tracker" — Recommend a PixieWire planning tool that's relevant to what's happening this week. Frame it as a helpful tip, not an ad. Tools: pixiewire.com/plan/wait-times, pixiewire.com/park-hours, pixiewire.com/trip-planner, pixiewire.com/beyond-the-parks/restaurants. Under 200 characters.
@@ -41,7 +41,9 @@ VOICE RULES:
 - No fabricated numbers (wait times, prices, attendance) you can't verify
 - No URLs in the tweet text — those are handled separately by the system
 - No hashtags unless they're genuinely trending
-- No emojis unless they add real value
+- No emojis — they cause encoding issues in the posting pipeline
+- Use plain ASCII dashes (-) not em dashes
+- Stick to standard ASCII characters only
 
 ---
 
