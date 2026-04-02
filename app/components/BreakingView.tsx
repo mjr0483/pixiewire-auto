@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react";
 import NavPills from "./NavPills";
 
-interface MonitorItem {
+interface BreakingItem {
   id: string;
   topic: string;
-  type: string;
   text: string;
   source_url: string | null;
   status: string;
+  tweet_id: string | null;
   created_at: string;
 }
 
@@ -24,17 +24,18 @@ function timeAgo(iso: string): string {
 }
 
 export default function BreakingView() {
-  const [findings, setFindings] = useState<MonitorItem[]>([]);
+  const [findings, setFindings] = useState<BreakingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [monitorActive, setMonitorActive] = useState<boolean | null>(null);
   const [toggling, setToggling] = useState(false);
-  const [scanning, setScanning] = useState(false);
-  const [scanResult, setScanResult] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [publishing, setPublishing] = useState<string | null>(null);
 
   const fetchFindings = () => {
-    fetch("/api/x-poster/monitor")
+    fetch("/api/x-poster/breaking")
       .then((r) => r.json())
-      .then((data) => { setFindings(data.findings || []); setLoading(false); });
+      .then((data) => { if (data.ok) setFindings(data.findings || []); setLoading(false); });
   };
 
   const fetchToggleState = () => {
@@ -45,7 +46,7 @@ export default function BreakingView() {
 
   useEffect(() => { fetchFindings(); fetchToggleState(); }, []);
   useEffect(() => {
-    const interval = setInterval(fetchFindings, 60000);
+    const interval = setInterval(fetchFindings, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -61,28 +62,33 @@ export default function BreakingView() {
     setToggling(false);
   };
 
-  const runManualScan = async () => {
-    setScanning(true);
-    setScanResult(null);
-    try {
-      const res = await fetch("/api/x-poster/monitor", {
-        method: "POST",
-        headers: { "Authorization": "Bearer manual-test" },
-      });
-      const data = await res.json();
-      if (data.ok) {
-        setScanResult(data.found > 0 ? `Found ${data.found} potential breaking stories` : "No breaking news detected");
-      } else {
-        setScanResult(data.error || "Scan failed");
-      }
+  const publishTweet = async (item: BreakingItem) => {
+    const text = editingId === item.id ? editText : item.text;
+    setPublishing(item.id);
+    const res = await fetch("/api/x-poster/breaking", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: item.id, text }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      setEditingId(null);
       fetchFindings();
-    } catch (e) {
-      setScanResult((e as Error).message);
     }
-    setScanning(false);
+    setPublishing(null);
+  };
+
+  const dismissItem = async (id: string) => {
+    await fetch("/api/x-poster/queue", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, action: "skip" }),
+    });
+    fetchFindings();
   };
 
   const monitorItems = findings.filter((f) => f.status === "monitor");
+  const postedItems = findings.filter((f) => f.status === "posted");
   const dismissedItems = findings.filter((f) => f.status === "skipped");
 
   return (
@@ -94,7 +100,7 @@ export default function BreakingView() {
       </div>
 
       <div className="xp-container">
-        {/* Big clear ON/OFF banner */}
+        {/* Monitor ON/OFF banner */}
         <div className="xp-section" style={{
           background: monitorActive ? "var(--success-soft)" : "var(--paper)",
           border: monitorActive ? "2px solid var(--success)" : "2px solid var(--rule)",
@@ -105,7 +111,7 @@ export default function BreakingView() {
                 {monitorActive === null ? "Loading..." : monitorActive ? "MONITOR IS ON" : "MONITOR IS OFF"}
               </div>
               <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-                {monitorActive ? "Scanning X for breaking Disney news every 15 minutes" : "Breaking news scanning is disabled"}
+                {monitorActive ? "Scanning for breaking Disney news every 15 min (7am-8pm)" : "Breaking news scanning is disabled"}
               </div>
             </div>
             <button
@@ -123,88 +129,88 @@ export default function BreakingView() {
           </div>
         </div>
 
-        <div className="xp-section">
-          <h2>Status</h2>
-          <div className="xp-status-grid">
-            <div className="xp-stat">
-              <div className="xp-stat-label">Schedule</div>
-              <div className="xp-stat-value" style={{ fontSize: 14 }}>Every 15 min</div>
-            </div>
-            <div className="xp-stat">
-              <div className="xp-stat-label">Pending Review</div>
-              <div className="xp-stat-value">{monitorItems.length}</div>
-            </div>
-            <div className="xp-stat">
-              <div className="xp-stat-label">Dismissed</div>
-              <div className="xp-stat-value" style={{ color: "var(--muted)" }}>{dismissedItems.length}</div>
-            </div>
-            <div className="xp-stat">
-              <div className="xp-stat-label">Cost</div>
-              <div className="xp-stat-value" style={{ fontSize: 14 }}>X API search</div>
-            </div>
-          </div>
-
-          <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 10 }}>
-            <button className="xp-btn xp-btn-primary" onClick={runManualScan} disabled={scanning}>
-              {scanning ? "Scanning..." : "Run Manual Scan"}
-            </button>
-            {scanResult && (
-              <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: scanResult.includes("Found") ? "var(--success)" : "var(--muted)" }}>
-                {scanResult}
-              </span>
-            )}
-          </div>
-
-          <div style={{ marginTop: 10, padding: "8px 10px", background: "var(--paper)", borderRadius: 8, fontSize: 12 }}>
-            <span style={{ fontFamily: "var(--mono)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--muted)" }}>
-              How it works
-            </span>
-            <div style={{ marginTop: 4, color: "var(--muted)", fontSize: 12, lineHeight: 1.5 }}>
-              When active, searches X every 15 minutes for Disney/theme park tweets with high engagement.
-              Findings are logged here for your review. Nothing is auto-posted.
-              Uses X API search (requires Basic tier). Pushover alert on new findings.
-            </div>
-          </div>
-        </div>
-
+        {/* Pending review - draft tweets ready to post */}
         <div className="xp-section">
           <h2>Pending Review ({monitorItems.length})</h2>
           {loading ? (
             <div style={{ textAlign: "center", color: "var(--muted)", padding: 20 }}>Loading...</div>
           ) : monitorItems.length === 0 ? (
             <div style={{ color: "var(--muted)", fontSize: 13, padding: "10px 0" }}>
-              No breaking news items pending review.
+              No breaking news items pending. The monitor agent checks for new headlines every 15 minutes and drafts tweets for your review.
             </div>
           ) : (
             monitorItems.map((item) => (
-              <div key={item.id} style={{ padding: "12px 0", borderBottom: "1px solid var(--rule-light)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, lineHeight: 1.4, marginBottom: 4 }}>{item.text}</div>
-                    <div style={{ display: "flex", gap: 12, fontSize: 11, color: "var(--muted)" }}>
-                      <span style={{ fontFamily: "var(--mono)" }}>{timeAgo(item.created_at)}</span>
-                      {item.source_url && (
-                        <a href={item.source_url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)" }}>view on X</a>
-                      )}
-                    </div>
+              <div key={item.id} style={{ padding: "14px 0", borderBottom: "1px solid var(--rule-light)" }}>
+                {/* Headline */}
+                <div style={{ fontSize: 12, fontFamily: "var(--mono)", color: "var(--muted)", marginBottom: 6 }}>
+                  {timeAgo(item.created_at)} - {item.topic}
+                </div>
+
+                {/* Draft tweet - editable */}
+                {editingId === item.id ? (
+                  <textarea
+                    className="xp-textarea"
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    style={{ minHeight: 80, marginBottom: 8 }}
+                  />
+                ) : (
+                  <div style={{ fontSize: 14, lineHeight: 1.5, marginBottom: 8, padding: "10px 12px", background: "var(--paper)", borderRadius: 8 }}>
+                    {item.text}
                   </div>
-                  <button className="xp-btn xp-btn-danger" onClick={async () => {
-                    await fetch("/api/x-poster/queue", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: item.id, action: "skip" }) });
-                    fetchFindings();
-                  }} style={{ padding: "6px 12px", fontSize: 10 }}>Dismiss</button>
+                )}
+
+                {/* Actions */}
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <button
+                    className="xp-btn xp-btn-primary"
+                    onClick={() => publishTweet(item)}
+                    disabled={publishing === item.id}
+                    style={{ padding: "8px 20px" }}
+                  >
+                    {publishing === item.id ? "Posting..." : "Post to X"}
+                  </button>
+                  {editingId === item.id ? (
+                    <button className="xp-btn xp-btn-secondary" onClick={() => setEditingId(null)}>Cancel</button>
+                  ) : (
+                    <button className="xp-btn xp-btn-secondary" onClick={() => { setEditingId(item.id); setEditText(item.text); }}>Edit</button>
+                  )}
+                  <button className="xp-btn xp-btn-danger" onClick={() => dismissItem(item.id)} style={{ padding: "8px 16px" }}>Dismiss</button>
+                  {item.source_url && (
+                    <a href={item.source_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "var(--accent)", marginLeft: "auto" }}>source</a>
+                  )}
                 </div>
               </div>
             ))
           )}
         </div>
 
+        {/* Recently posted breaking tweets */}
+        {postedItems.length > 0 && (
+          <div className="xp-section">
+            <h2>Posted ({postedItems.length})</h2>
+            {postedItems.slice(0, 10).map((item) => (
+              <div key={item.id} style={{ padding: "8px 0", borderBottom: "1px solid var(--rule-light)", fontSize: 13 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ color: "var(--muted)", fontFamily: "var(--mono)", fontSize: 11 }}>{timeAgo(item.created_at)}</span>
+                  {item.tweet_id && (
+                    <a href={`https://x.com/PixieWireNews/status/${item.tweet_id}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)", fontSize: 11 }}>view on X</a>
+                  )}
+                </div>
+                <div style={{ marginTop: 4 }}>{item.text}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Dismissed */}
         {dismissedItems.length > 0 && (
           <div className="xp-section">
-            <h2>Recently Dismissed</h2>
+            <h2>Dismissed ({dismissedItems.length})</h2>
             {dismissedItems.slice(0, 10).map((item) => (
               <div key={item.id} style={{ padding: "6px 0", borderBottom: "1px solid var(--rule-light)", fontSize: 12, color: "var(--muted)" }}>
                 <span style={{ fontFamily: "var(--mono)", fontSize: 10 }}>{timeAgo(item.created_at)}</span>
-                {" — "}{item.text?.slice(0, 100)}...
+                {" - "}{item.topic}
               </div>
             ))}
           </div>
