@@ -139,7 +139,7 @@ body {
   font-family: var(--mono); font-size: 11px; color: var(--muted); width: 24px; flex-shrink: 0;
 }
 
-.xp-status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.xp-status-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .xp-stat { padding: 10px; background: var(--paper); border-radius: 8px; }
 .xp-stat-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .xp-stat-value { font-size: 16px; font-weight: 600; margin-top: 4px; }
@@ -196,7 +196,7 @@ body {
 .xp-schema-input:focus { border-color: var(--accent); outline: none; }
 
 @media (max-width: 640px) {
-  .xp-status-grid { grid-template-columns: 1fr; }
+  .xp-status-grid { grid-template-columns: 1fr 1fr; }
   .xp-row { flex-wrap: wrap; }
   .xp-schema-header-row { display: none; }
   .xp-schema-row { grid-template-columns: 1fr 1fr; gap: 4px; padding: 8px 0; }
