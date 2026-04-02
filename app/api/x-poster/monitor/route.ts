@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { signOAuthRequest, getXCredentials } from "@/lib/x-api";
 import { supabase } from "@/lib/supabase-client";
+import { sendPushover } from "@/lib/pushover";
 
 const SEARCH_QUERY = '(Disney OR "Walt Disney World" OR Disneyland OR "Magic Kingdom" OR EPCOT OR "Universal Orlando" OR "Epic Universe") -is:retweet -is:reply lang:en';
 
@@ -82,6 +83,22 @@ export async function POST(req: NextRequest) {
             batch: "breaking",
           });
       }
+    }
+
+    // Send Pushover notification for new findings
+    if (findings.length > 0) {
+      const summary = findings.length === 1
+        ? `@${findings[0].author}: ${findings[0].text.slice(0, 120)}`
+        : `${findings.length} stories detected. Top: @${findings[0].author}: ${findings[0].text.slice(0, 80)}`;
+
+      await sendPushover({
+        title: `Breaking: ${findings.length} Disney stor${findings.length === 1 ? "y" : "ies"}`,
+        message: summary,
+        url: "https://auto.pixiewire.com/breaking",
+        url_title: "Review in Auto",
+        priority: 1,
+        sound: "siren",
+      });
     }
 
     return NextResponse.json({

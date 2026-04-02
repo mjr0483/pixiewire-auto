@@ -57,6 +57,8 @@ function timeAgo(iso: string): string {
 export default function StatusDashboard({ settings, queue, onToggle }: Props) {
   const [testResult, setTestResult] = useState<{ ok: boolean; username?: string; error?: string } | null>(null);
   const [testing, setTesting] = useState(false);
+  const [pushResult, setPushResult] = useState<{ ok: boolean; error?: string } | null>(null);
+  const [pushTesting, setPushTesting] = useState(false);
 
   const schedule = settings.active_posting_windows?.schedule || [];
   const posted = queue.filter((q) => q.status === "posted").length;
@@ -146,14 +148,29 @@ export default function StatusDashboard({ settings, queue, onToggle }: Props) {
         )}
       </div>
 
-      {/* X API test */}
-      <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10 }}>
+      {/* Connection tests */}
+      <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <button className="xp-btn xp-btn-secondary" onClick={testXConnection} disabled={testing}>
-          {testing ? "Testing..." : "Test X Connection"}
+          {testing ? "Testing..." : "Test X"}
         </button>
         {testResult && (
           <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: testResult.ok ? "var(--success)" : "var(--accent)" }}>
-            {testResult.ok ? `Connected as @${testResult.username}` : `Failed: ${testResult.error?.slice(0, 60)}`}
+            {testResult.ok ? `@${testResult.username}` : `Failed: ${testResult.error?.slice(0, 40)}`}
+          </span>
+        )}
+        <button className="xp-btn xp-btn-secondary" onClick={async () => {
+          setPushTesting(true); setPushResult(null);
+          try {
+            const res = await fetch("/api/x-poster/test-pushover");
+            setPushResult(await res.json());
+          } catch (e) { setPushResult({ ok: false, error: (e as Error).message }); }
+          setPushTesting(false);
+        }} disabled={pushTesting}>
+          {pushTesting ? "Sending..." : "Test Pushover"}
+        </button>
+        {pushResult && (
+          <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: pushResult.ok ? "var(--success)" : "var(--accent)" }}>
+            {pushResult.ok ? "Sent" : `Failed: ${pushResult.error?.slice(0, 40)}`}
           </span>
         )}
       </div>
