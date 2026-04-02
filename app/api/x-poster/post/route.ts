@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
       await updateTweet(tweetId, {
         status: "posted",
         posted_at: new Date().toISOString(),
-      });
+        tweet_id: result.id,
+      } as any);
     }
 
     return NextResponse.json({ ok: true, tweet: result });

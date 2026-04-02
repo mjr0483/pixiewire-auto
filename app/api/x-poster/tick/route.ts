@@ -76,11 +76,12 @@ export async function POST(req: NextRequest) {
         if (scheduledTime <= new Date()) {
           try {
             const credentials = getXCredentials();
-            await postTweet(credentials, existingTweet.text);
+            const result = await postTweet(credentials, existingTweet.text);
             await updateTweet(existingTweet.id, {
               status: "posted",
               posted_at: new Date().toISOString(),
-            });
+              tweet_id: result.id,
+            } as any);
             actions.push(`Slot ${slot.slot}: posted to X`);
           } catch (e) {
             await updateTweet(existingTweet.id, {

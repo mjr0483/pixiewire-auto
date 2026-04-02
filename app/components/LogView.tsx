@@ -10,6 +10,7 @@ interface Tweet {
   text: string;
   cta_url: string | null;
   source_url: string | null;
+  tweet_id: string | null;
   status: string;
   scheduled_at: string | null;
   posted_at: string | null;
@@ -31,14 +32,19 @@ function formatTime(iso: string): string {
   });
 }
 
+function toETDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+}
+
 export default function LogView() {
   const [allTweets, setAllTweets] = useState<Tweet[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filters
   const [filterType, setFilterType] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterSearch, setFilterSearch] = useState("");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
 
   const [page, setPage] = useState(0);
   const perPage = 25;
@@ -52,25 +58,30 @@ export default function LogView() {
       });
   }, []);
 
-  // Derive unique values for filter dropdowns
   const types = useMemo(() => [...new Set(allTweets.map((t) => t.type))].sort(), [allTweets]);
   const statuses = useMemo(() => [...new Set(allTweets.map((t) => t.status))].sort(), [allTweets]);
 
-  // Apply filters
   const filtered = useMemo(() => {
     return allTweets.filter((t) => {
       if (filterType !== "all" && t.type !== filterType) return false;
       if (filterStatus !== "all" && t.status !== filterStatus) return false;
       if (filterSearch && !t.text?.toLowerCase().includes(filterSearch.toLowerCase()) && !t.topic?.toLowerCase().includes(filterSearch.toLowerCase())) return false;
+      if (filterDateFrom) {
+        const tDate = toETDate(t.posted_at || t.scheduled_at || t.created_at);
+        if (tDate < filterDateFrom) return false;
+      }
+      if (filterDateTo) {
+        const tDate = toETDate(t.posted_at || t.scheduled_at || t.created_at);
+        if (tDate > filterDateTo) return false;
+      }
       return true;
     });
-  }, [allTweets, filterType, filterStatus, filterSearch]);
+  }, [allTweets, filterType, filterStatus, filterSearch, filterDateFrom, filterDateTo]);
 
   const paginated = filtered.slice(page * perPage, (page + 1) * perPage);
   const totalPages = Math.ceil(filtered.length / perPage);
 
-  // Reset page when filters change
-  useEffect(() => { setPage(0); }, [filterType, filterStatus, filterSearch]);
+  useEffect(() => { setPage(0); }, [filterType, filterStatus, filterSearch, filterDateFrom, filterDateTo]);
 
   return (
     <>
@@ -81,7 +92,6 @@ export default function LogView() {
       </div>
 
       <div className="xp-container">
-        {/* Filters */}
         <div className="xp-section">
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
             <select className="xp-select" value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{ width: 140 }}>
@@ -93,13 +103,36 @@ export default function LogView() {
               {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
             <input
+              type="date"
+              className="xp-schema-input"
+              value={filterDateFrom}
+              onChange={(e) => setFilterDateFrom(e.target.value)}
+              style={{ width: 140, padding: "5px 8px", fontSize: 12 }}
+              title="From date"
+            />
+            <input
+              type="date"
+              className="xp-schema-input"
+              value={filterDateTo}
+              onChange={(e) => setFilterDateTo(e.target.value)}
+              style={{ width: 140, padding: "5px 8px", fontSize: 12 }}
+              title="To date"
+            />
+            <input
               type="text"
               className="xp-schema-input"
               placeholder="Search content..."
               value={filterSearch}
               onChange={(e) => setFilterSearch(e.target.value)}
-              style={{ flex: 1, minWidth: 150, padding: "6px 10px", fontSize: 13 }}
+              style={{ flex: 1, minWidth: 120, padding: "6px 10px", fontSize: 13 }}
             />
+            {(filterType !== "all" || filterStatus !== "all" || filterSearch || filterDateFrom || filterDateTo) && (
+              <button
+                className="xp-btn xp-btn-secondary"
+                onClick={() => { setFilterType("all"); setFilterStatus("all"); setFilterSearch(""); setFilterDateFrom(""); setFilterDateTo(""); }}
+                style={{ padding: "5px 10px", fontSize: 10 }}
+              >Clear</button>
+            )}
             <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--muted)" }}>
               {filtered.length} result{filtered.length !== 1 ? "s" : ""}
             </span>
@@ -143,13 +176,13 @@ export default function LogView() {
                         <span className={`xp-queue-status ${t.status}`}>{t.status}</span>
                       </td>
                       <td style={{ padding: "8px 4px", whiteSpace: "nowrap" }}>
-                        {t.cta_url && (
-                          <a href={t.cta_url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)", fontSize: 11, marginRight: 8 }}>tweet</a>
+                        {t.tweet_id && (
+                          <a href={`https://x.com/PixieWireNews/status/${t.tweet_id}`} target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent)", fontSize: 11, marginRight: 8 }}>tweet</a>
                         )}
                         {t.source_url && (
                           <a href={t.source_url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--muted)", fontSize: 11 }}>source</a>
                         )}
-                        {!t.cta_url && !t.source_url && "—"}
+                        {!t.tweet_id && !t.source_url && "—"}
                       </td>
                     </tr>
                   ))}
