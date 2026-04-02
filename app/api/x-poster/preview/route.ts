@@ -30,7 +30,10 @@ export async function POST(req: NextRequest) {
       let generated: string;
       let source: string;
 
-      if (useGrok && process.env.XAI_API_KEY) {
+      // Roundup always uses Claude only — it just summarizes headlines we already have
+      const skipGrok = ct.id === "roundup";
+
+      if (useGrok && !skipGrok && process.env.XAI_API_KEY) {
         // Grok: research + draft with live X/web search
         const result = await grokResearchAndDraft(ct.id, ct.maxChars, headlinesText);
         generated = result.text;

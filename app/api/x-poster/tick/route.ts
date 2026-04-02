@@ -62,9 +62,10 @@ export async function POST(req: NextRequest) {
         try {
           const useGrok = (settings as any).use_grok !== false;
           const claudePolish = (settings as any).claude_polish === true;
+          const skipGrok = ct.id === "roundup";
           let text: string;
 
-          if (useGrok && process.env.XAI_API_KEY) {
+          if (useGrok && !skipGrok && process.env.XAI_API_KEY) {
             const result = await grokResearchAndDraft(ct.id, ct.maxChars, headlinesText);
             text = result.text;
             if (claudePolish && process.env.ANTHROPIC_API_KEY) {
