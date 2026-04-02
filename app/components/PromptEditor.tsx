@@ -31,16 +31,16 @@ export default function PromptEditor({ prompt, onSave }: Props) {
     <div className="xp-section">
       <div
         onClick={() => setOpen(!open)}
-        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
+        style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}
       >
+        <span style={{
+          fontSize: 14, color: "var(--ink)", transition: "transform 0.2s",
+          transform: open ? "rotate(90deg)" : "rotate(0deg)", display: "inline-block",
+        }}>&#9658;</span>
         <h2 style={{ margin: 0 }}>
           Master Prompt
           {dirty && <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--gold)", marginLeft: 8 }}>unsaved</span>}
         </h2>
-        <span style={{
-          fontSize: 18, color: "var(--ink)", transition: "transform 0.2s",
-          transform: open ? "rotate(90deg)" : "rotate(0deg)", display: "inline-block",
-        }}>&#9658;</span>
       </div>
 
       {open && (
