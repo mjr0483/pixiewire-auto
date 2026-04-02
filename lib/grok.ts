@@ -54,7 +54,14 @@ Return ONLY the tweet text. Nothing else.`;
 
   // Extract text from response
   const msg = data.output?.find((o: any) => o.type === "message");
-  const text = msg?.content?.find((c: any) => c.type === "output_text")?.text || "";
+  let text = msg?.content?.find((c: any) => c.type === "output_text")?.text || "";
+
+  // Strip citation links like [[1]](https://...) or [1](https://...)
+  text = text.replace(/\[\[?\d+\]?\]\([^)]*\)/g, "");
+  // Strip any remaining markdown links
+  text = text.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
+  // Clean up double spaces and trailing whitespace
+  text = text.replace(/  +/g, " ").trim();
 
   // Extract source URLs from annotations
   const sources: string[] = [];
@@ -65,5 +72,5 @@ Return ONLY the tweet text. Nothing else.`;
     }
   }
 
-  return { text: text.trim(), sources };
+  return { text, sources };
 }

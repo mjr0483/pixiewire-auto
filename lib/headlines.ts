@@ -21,10 +21,24 @@ export async function getRecentHeadlines(hours: number = 12, limit: number = 20)
   return (data || []) as Headline[];
 }
 
+function cleanUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    // Remove tracking params
+    u.searchParams.delete("adt_ei");
+    u.searchParams.delete("utm_source");
+    u.searchParams.delete("utm_medium");
+    u.searchParams.delete("utm_campaign");
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
 export function formatHeadlinesForPrompt(headlines: Headline[]): string {
   if (headlines.length === 0) return "No recent headlines available.";
 
   return headlines
-    .map((h, i) => `${i + 1}. "${h.title}" — ${h.source} (${h.url})`)
+    .map((h, i) => `${i + 1}. "${h.title}" — ${h.source} (${cleanUrl(h.url)})`)
     .join("\n");
 }
