@@ -28,8 +28,11 @@ STEP 3: Write ONE tweet. Rules:
 - No fabricated numbers
 - Under ${maxChars} characters
 - No hashtags unless genuinely trending
+- NEVER include citation markers like [[1]], [1], [2], or any footnote references
+- NEVER include markdown links like [text](url)
+- NEVER include source annotations of any kind
 
-Return ONLY the tweet text. Nothing else.`;
+Return ONLY the raw tweet text. No citations. No links. No JSON. No labels. Just the tweet.`;
 
   const response = await fetch(XAI_API, {
     method: "POST",
@@ -56,11 +59,20 @@ Return ONLY the tweet text. Nothing else.`;
   const msg = data.output?.find((o: any) => o.type === "message");
   let text = msg?.content?.find((c: any) => c.type === "output_text")?.text || "";
 
-  // Strip citation links like [[1]](https://...) or [1](https://...)
+  // Layer 2: Strip ALL citation artifacts (safety net for when prompt is ignored)
+  // [[1]](url), [1](url), [[1]], [1], [2], etc.
   text = text.replace(/\[\[?\d+\]?\]\([^)]*\)/g, "");
-  // Strip any remaining markdown links
+  text = text.replace(/\[\[\d+\]\]/g, "");
+  text = text.replace(/\[\d+\]/g, "");
+  // Superscript citation numbers
+  text = text.replace(/[¹²³⁴⁵⁶⁷⁸⁹⁰]+/g, "");
+  // Markdown links [text](url)
   text = text.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
-  // Clean up double spaces and trailing whitespace
+  // Bare URLs that snuck in
+  text = text.replace(/https?:\/\/\S+/g, "");
+  // Clean up parentheses left empty after URL removal, e.g. "()" or "( )"
+  text = text.replace(/\(\s*\)/g, "");
+  // Double spaces and trim
   text = text.replace(/  +/g, " ").trim();
 
   // Extract source URLs from annotations

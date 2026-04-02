@@ -7,6 +7,7 @@ import { getCurrentTimeET } from "@/lib/eastern-time";
 import { postTweet, getXCredentials } from "@/lib/x-api";
 import { sendPushover } from "@/lib/pushover";
 import { getRecentHeadlines, formatHeadlinesForPrompt } from "@/lib/headlines";
+import { sanitizeTweet } from "@/lib/sanitize";
 
 export async function POST(req: NextRequest) {
   try {
@@ -48,6 +49,8 @@ export async function POST(req: NextRequest) {
         source = "claude";
       }
 
+      // Final sanitize — strip any citation artifacts before returning
+      generated = sanitizeTweet(generated);
       return NextResponse.json({ ok: true, text: generated, content_type: ct.id, source });
     }
 

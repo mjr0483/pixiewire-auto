@@ -9,6 +9,7 @@ import { sendPushover } from "@/lib/pushover";
 import { getRecentHeadlines, formatHeadlinesForPrompt } from "@/lib/headlines";
 import { grokResearchAndDraft } from "@/lib/grok";
 import { polishTweet } from "@/lib/claude";
+import { sanitizeTweet } from "@/lib/sanitize";
 
 export async function POST(req: NextRequest) {
   const authError = requireAuth(req);
@@ -74,6 +75,8 @@ export async function POST(req: NextRequest) {
             const model = settings.generation_model || "claude-haiku-4-5-20251001";
             text = await generateTweet(prompt, model);
           }
+          // Final sanitize
+          text = sanitizeTweet(text);
           const scheduledAt = getScheduledTimestampUTC(slot.time, todayET);
 
           await insertTweet({
