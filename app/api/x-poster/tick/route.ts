@@ -5,6 +5,7 @@ import { getTodayET, getTodayStartET, getCurrentTimeET, getScheduledTimestampUTC
 import { generateTweet } from "@/lib/claude";
 import { resolveContentTypes, buildPrompt } from "@/lib/content-types";
 import { postTweet, getXCredentials } from "@/lib/x-api";
+import { sendPushover } from "@/lib/pushover";
 
 export async function POST(req: NextRequest) {
   const authError = requireAuth(req);
@@ -83,6 +84,12 @@ export async function POST(req: NextRequest) {
               tweet_id: result.id,
             } as any);
             actions.push(`Slot ${slot.slot}: posted to X`);
+            await sendPushover({
+              title: "Tweet Posted",
+              message: `Post ${slot.slot} — ${slot.time} ET — ${slot.content_type}\n${existingTweet.text.slice(0, 120)}`,
+              url: `https://x.com/PixieWireNews/status/${result.id}`,
+              url_title: "View on X",
+            });
           } catch (e) {
             await updateTweet(existingTweet.id, {
               status: "failed",
@@ -90,6 +97,12 @@ export async function POST(req: NextRequest) {
               error_message: (e as Error).message,
             });
             actions.push(`Slot ${slot.slot}: post failed — ${(e as Error).message}`);
+            await sendPushover({
+              title: "Tweet Failed",
+              message: `Post ${slot.slot} — ${slot.time} ET — ${slot.content_type}\nError: ${(e as Error).message.slice(0, 100)}`,
+              priority: 1,
+              sound: "falling",
+            });
           }
         }
       }
