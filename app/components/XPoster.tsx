@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { DEFAULT_CONTENT_TYPES } from "@/lib/content-types";
+import { DEFAULT_CONTENT_TYPES, getAutomatedTypes } from "@/lib/content-types";
 import PromptEditor from "./PromptEditor";
 import PostSchedule from "./PostSchedule";
 import StatusDashboard from "./StatusDashboard";
@@ -15,6 +15,7 @@ interface ContentType {
   description: string;
   urlStrategy: string;
   bestTimeSlots: string[];
+  automated: boolean;
 }
 
 interface PostSlot {
@@ -71,8 +72,6 @@ export default function XPosterPage() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  // Auto-refresh every 30 seconds
   useEffect(() => {
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
@@ -114,12 +113,17 @@ export default function XPosterPage() {
   const contentTypes = settings?.content_types && settings.content_types.length > 0
     ? settings.content_types
     : DEFAULT_CONTENT_TYPES;
+  const schedulableTypes = getAutomatedTypes(contentTypes);
 
   return (
     <>
       <div className="header">
         <h1>Auto-Poster</h1>
         <div className="brand">PixieWire</div>
+        <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 8 }}>
+          <a href="/log" className="xp-nav-link">Log</a>
+          <a href="/analytics" className="xp-nav-link">Analytics</a>
+        </div>
       </div>
 
       {error && (
@@ -147,7 +151,7 @@ export default function XPosterPage() {
             />
             <PostSchedule
               schedule={settings.active_posting_windows}
-              contentTypes={contentTypes}
+              contentTypes={schedulableTypes}
               onSave={(schedule) => saveSettings({ active_posting_windows: schedule })}
             />
             <TweetQueue queue={queue} onAction={queueAction} />

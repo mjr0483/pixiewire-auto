@@ -1,17 +1,5 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import type { ContentType } from "./content-types";
-
-let _supabase: SupabaseClient | null = null;
-
-function getSupabase(): SupabaseClient {
-  if (!_supabase) {
-    _supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
-  }
-  return _supabase;
-}
+import { supabase as getSupabase } from "./supabase-client";
 
 export interface PostSlot {
   slot: number;
