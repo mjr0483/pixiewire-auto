@@ -118,6 +118,7 @@ export default function AgentView() {
             <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--muted)" }}>Filter:</span>
             <button onClick={() => setFilterAgent("all")} className={filterAgent === "all" ? "xp-pill xp-pill-active" : "xp-pill"} style={{ fontSize: 11, padding: "4px 12px" }}>All</button>
             <button onClick={() => setFilterAgent("tweeter")} className={filterAgent === "tweeter" ? "xp-pill xp-pill-active" : "xp-pill"} style={{ fontSize: 11, padding: "4px 12px" }}>Tweeter</button>
+            <button onClick={() => setFilterAgent("jotd")} className={filterAgent === "jotd" ? "xp-pill xp-pill-active" : "xp-pill"} style={{ fontSize: 11, padding: "4px 12px" }}>JOTD</button>
             <button onClick={() => setFilterAgent("breaking")} className={filterAgent === "breaking" ? "xp-pill xp-pill-active" : "xp-pill"} style={{ fontSize: 11, padding: "4px 12px" }}>Breaking</button>
             <button onClick={() => setFilterAgent("auditor")} className={filterAgent === "auditor" ? "xp-pill xp-pill-active" : "xp-pill"} style={{ fontSize: 11, padding: "4px 12px" }}>Auditor</button>
           </div>

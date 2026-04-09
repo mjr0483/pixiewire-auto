@@ -135,6 +135,10 @@ export default function XPosterPage() {
       )}
 
       <div className="xp-container">
+        <div style={{ background: "var(--gold-soft)", border: "1px solid var(--gold)", borderRadius: 8, padding: "10px 14px", marginBottom: 12, fontSize: 12, color: "var(--ink)", lineHeight: 1.5 }}>
+          <strong style={{ fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.06em", textTransform: "uppercase" }}>Note:</strong>{" "}
+          This auto-poster requires AI credits to generate tweets. Tweet auto-posting has moved to <strong>Claude Code Scheduled Jobs</strong>.
+        </div>
         {settings && (
           <>
             <StatusDashboard
